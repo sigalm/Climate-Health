@@ -1,0 +1,229 @@
+---
+title: "Wildfire Model v.1"
+subtitle: "Documentation"
+author: "Sigal Maya"
+date: "4/26/2022"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This document contains the wildfire microsimulation model. The wildfire microsimulation model defines an initial population and model parameters, and defines and runs a model to calculate health and cost outcomes. It consists of three sections: model inputs, defining functions, and running the simulation. Majority of the code is based on Krijkamp 2018.^1^\
+
+## 1) Model inputs
+
+Naming conventions:
+
+-   Objects with prefix n. are numbers
+-   Objects with prefix v. are vectors
+-   Objects with prefix m. are matrices\
+
+### Define model design parameters
+
+-   `n.i`: Cohort size
+-   `n.t`: Time horizon
+-   `cl`: Cycle length (in years)
+-   `v.n`: Vector containing the names of possible health states
+-   `n.s`: Number of possible health states
+-   `v.M_1`: Vector of length `n.i` containing initial health states of each individual (by default, everyone begins Healthy)
+-   `d.c`: Discount rate for costs
+-   `d.e`: Discount rate for health effects (default is equal to `d.c`)
+-   `v.intn`: Vector containing names of interventions to be assessed\
+
+### Define transition probabilities
+
+All transition probabilities depend on whether a fire happens or not. `p.fire` changes over time, and also depends on rural/urban designation.
+
+Individuals may:
+
+-   die immediately (`p.HD`)
+-   become acutely injured, e.g., burns, smoke inhalation, other injuries (`p.Act`)
+-   heal from acute injuries (`p.ActH`)
+-   become permanently injured from acute injuries, e.g., cancer or CVD due to smoke, amputation from extensive burns (`p.ActPrm`)
+-   die from acute injuries, e.g., heart attack after smoke inhalation, extensive burns (`p.ActD`)
+-   die from permanent injuries, e.g., die from cancer due to smoke (`p.ActD`)\
+
+Individuals with lung issues due to smoke (i.e, permanent injury) are more vulnerable to adverse outcomes during the next fire. Otherwise, transition probabilities remain the same over time.\
+
+Individual characteristics that are risk modifiers are:
+
+-   age
+-   sex\
+
+### Define cost and health effect inputs
+
+Objects with prefix c. denote cost values. Objects with prefix u. denote health state utility values.\
+
+### Initialize population
+
+Create a matrix containing individual characteristics for each person (`m.x`).
+
+1.  Give everyone an ID number from 1 to `n.i`.
+
+2.  Assign age. Currently based on a normal distribution with mean 48 and standard deviation 5.
+
+3.  Assign sex based on a binomial distribution. Currently, probability of female is 0.55.
+
+4.  Assign rural/urban designation based on a binomial distribution. Currently, probability of rural is 0.30.
+
+5.  Define previous wildfire exposure. By default everyone start with no prior exposure.
+
+6.  Assign neighborhood based on rural/urban designation. Rural neighborhoods are A and B, urban neighborhoods are C, D, and E.\
+
+## 2) Define functions
+
+### MicroSim
+
+#### Usage:
+
+```{r MicroSim function, eval=FALSE}
+MicroSim(v.M_1, n.i, n.t, p.fire, v.n, m.x, cl, d.c, d.e, TR.out = TRUE, TS.out = TRUE, intn=FALSE, seed = 1)
+```
+
+#### Arguments:
+
+-   `v.M_1`: vector of initial states for each individual
+-   `n.i`: number of individuals
+-   `n.t`: number of cycles
+-   `p.fire`: probability of fire in a given cycle
+-   `v.n`: vector of health state names
+-   `m.x`: vector or matrix with individual characteristics
+-   `cl`: cycle length
+-   `d.c`, `d.e`: discount rates for cost and health outcomes
+-   `TR.out`: should the output include a microsimulation trace?
+-   `TS.out`: should the output include a transition array between states?
+-   `intn`: is there an intervention? (scalar with Boolean value, could be vector of Booleans if some people receive intervention and some don't)
+-   `seed`: starting seed number\
+
+The following functions are used:
+
+-   `Probs(...)`: to estimate transition probabilities
+
+-   `Costs(...)`: to estimate costs of state values
+
+-   `Effs(...)`: to estimate health outcomes\
+
+#### Details:
+
+1.  Vectors of discount weights for costs and health effects at each cycle are calculated using the formula $\text{discount factor}=1/(1 + \text{discount rate})^{t}$.
+
+2.  Matrices for tracking fires (`m.fire`), health states (`m.M`), costs (`m.C`), and health outcomes (`m.E`) are initialized.
+
+3.  Run the microsimulation algorithm.
+
+    a.  For i = 1 to `n.i`, calculate initial costs health effects.
+    b.  For t = 1 to `c.t`, calculate the probability of fire given t (using `rr.fire.over.time`)
+    c.  Determine whether a fire happens for individual i at cycle t given `p.fire` and urban/rural designation
+    d.  Create vector of transition probabilities `v.p` for individual i at cycle t, using the `Probs(...)` function, based on prior health state, whether a fire is experienced, and individual characteristics.
+    e.  Determine which health state the individual will have next using `v.p`.
+    f.  Determine costs and health outcomes based on new health state, whether there is an intervention, and individual characteristics. + Increase age by one.
+    g.  Set prior exposure to `TRUE` if a fire has been experienced.
+    h.  Close loop for cycles.
+    i.  Close loop for individuals.
+
+4.  Results are returned as a list:
+
+    a.  `m.M`: A matrix of size `n.i` x `n.t+1` containing the health state occupied by each individual at each cycle.
+    b.  `m.C`: A matrix of size `n.i` x `n.t+1` containing the costs incurred by each individual at each cycle.
+    c.  `m.E`: A matrix of size `n.i` x `n.t+1` containing the health outcomes (QALYs) for each individual at each cycle.
+    d.  `tc`: Vector of total discounted costs per individual.
+    e.  `te`: Vector of total discounted QALYs per individual.
+    f.  `tc_hat`: Mean discounted costs
+    g.  `te_hat`: Mean discounted QALYs
+    h.  `m.fire`: Matrix of size `n.i` x `n.t` containing fire exposure of each individual at each cycle.
+    i.  `m.x`: Matrix containing the individual characteristics of each individual at the end of the time horizon `n.t`.
+    j.  `TS`: A matrix illustrating the state transitions of each individual `n.i` at each cycle `n.t`.
+    k.  `TR`: A matrix of size `n.t`x`v.n` containing the health state distribution trace.\
+
+### Probs
+
+#### Usage:
+
+```{r Probs function, eval=FALSE}
+Probs(M_it, m.fire_it, m.chars_i)
+```
+
+#### Arguments:
+
+-   `M_it`: health state occupied by individual i at cycle t (i.e., `m.M[i,t+1]`)
+-   `m.fire_it`: fire experience of individual i at cycle t (i.e., `m.fire[i,t]`)
+-   `m.chars_i`: vector of individual characteristics of individual i (i.e., `m.x[i, ]`)\
+
+#### Details:
+
+1.  Initialize a vector of length `n.s` to hold state transition probabilities.
+
+2.  Calculate `p.PrmD` conditional on prior wildfire smoke exposure.
+
+3.  Calculate all transitions conditional on the occurrence of a fire.
+
+4.  Assign transition probabilities conditional on current health state.
+
+5.  Return vector of transition probabilities for individual i at cycle t.\
+
+### Costs
+
+#### Usage:
+
+```{r Costs function, eval=FALSE}
+Costs(M_it, intervention = FALSE)
+```
+
+#### Arguments:
+
+-   `M_it`: health state occupied by individual i at cycle t (i.e., `m.M[i,t+1]`)
+-   `intervention`: is there an intervention? (i.e., `intn`)\
+
+#### Details:
+
+1.  Define variable to hold costs.
+
+2.  Assign cost associated with current health state.
+
+3.  Return cost for individual i at cycle t.
+
+Note: In the future, this should also include individual characteristics.\
+
+### Effs
+
+#### Usage:
+
+```{r Effs function, eval=FALSE}
+Effs(M_it, intervention = FALSE, m.chars = NULL, cl=1)
+```
+
+#### Arguments:
+
+-   `M_it`: health state occupied by individual i at cycle t (i.e., `m.M[i,t+1]`)
+-   `intervention`: is there an intervention? (i.e., `intn`)
+-   `m.chars`: individual characteristics of individual i at cycle t (i.e., `m.x[i, ]`)\
+
+#### Details:
+
+1.  Define variable to hold utilities.
+
+2.  Assign utility associated with current health state conditional on intervention.
+
+3.  Calculate QALYs using $\text{utility}*\text{cycle length}$.
+
+4.  Return QALYs for individual i at cycle t.
+
+*Note:* Individual characteristics are not yet being used. Future revisions should include the effect of other factors.\
+
+## 3) Run simulation
+
+Run the `MicroSim()` function with a given intervention mix.\
+
+## 4) Future revisions
+
+-   Future revisions should add code to automatically generate figures and tables of interest from simulation results.
+-   Include social networks and interaction that may affect health outcomes.
+-   Combine this with a second model of a different health outcome.
+-   The model currently uses a hypothetical, closed cohort. It needs to be revised to model an open cohort with births, deaths, and immigration. It also needs to incorporate real data.
+-   All data in the model are placeholders. They need to be updated to contain real values.\
+
+## References
+
+1.  Krijkamp EM, Alarid-Escudero F, Enns EA, Jalal HJ, Hunink MGM, Pechlivanoglou P. Microsimulation Modeling for Health Decision Sciences Using R: A Tutorial. Med Decis Making. 2018;38(3):400-22. doi: 10.1177/0272989X18754513.
