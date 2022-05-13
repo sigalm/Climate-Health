@@ -132,7 +132,7 @@ MicroSim <- function(v.M_1, n.i, n.t, p.fire, v.n, m.x, cl, d.c, d.e, TR.out = T
   }
   
   
-  m.M <- m.C <- m.E <- matrix(nrow=n.i, ncol=n.t+1, dimnames = list(paste("ind", 1:n.i), paste("cycle",0:n.t)))  
+  # m.M <- m.C <- m.E <- matrix(nrow=n.i, ncol=n.t+1, dimnames = list(paste("ind", 1:n.i), paste("cycle",0:n.t)))  
   m.M[ ,1] <- v.M_1    # indicate initial health states in first column (first cycle)
   
   
