@@ -74,7 +74,9 @@ Create a matrix containing individual characteristics for each person (`m.x`).
 
 6.  Assign neighborhood based on rural/urban designation. Rural neighborhoods are A and B, urban neighborhoods are C, D, and E. Probability of living in each neighborhood can be determined using the relative population densities of each neighborhood. A neighborhood is then assigned to each individual based on their rural/urban designation and the `sample()` function.\
 
-7.  Place individuals in households based on their neighborhood, given a mena household size of 4. 
+7.  Place individuals in households based on their neighborhood, given a mean household size (default is 4).
+
+8. Input (or generate) year over year fire data per neighborhood.
 
 ## 2) Define functions
 
@@ -83,7 +85,7 @@ Create a matrix containing individual characteristics for each person (`m.x`).
 #### Usage:
 
 ```{r MicroSim function, eval=FALSE}
-MicroSim(v.M_1, n.i, n.t, p.fire, v.n, m.x, cl, d.c, d.e, TR.out = TRUE, TS.out = TRUE, intn=FALSE, seed = 1)
+MicroSim(v.M_1, n.i, n.t, m.fire, m.smoke.exposure.cum, v.n, m.x, cl, d.c, d.e, TR.out = TRUE, TS.out = TRUE, intn=FALSE, seed = 1)
 ```
 
 #### Arguments:
@@ -91,7 +93,8 @@ MicroSim(v.M_1, n.i, n.t, p.fire, v.n, m.x, cl, d.c, d.e, TR.out = TRUE, TS.out 
 -   `v.M_1`: vector of initial states for each individual
 -   `n.i`: number of individuals
 -   `n.t`: number of cycles
--   `p.fire`: probability of fire in a given cycle
+-   `m.fire`: fire occurrence data
+-   `m.smoke.exposure.cum`: cumulative days of smoke exposure by neighborhood each cycle (equivalent to air quality data)
 -   `v.n`: vector of health state names
 -   `m.x`: vector or matrix with individual characteristics
 -   `cl`: cycle length
@@ -113,11 +116,9 @@ The following functions are used:
 
 1.  Vectors of discount weights for costs and health effects at each cycle are calculated using the formula $\text{discount factor}=1/(1 + \text{discount rate})^{t}$.
 
-2.  The matrix for tracking fires (`m.fire`) in each neighborhood over time is initialized and calculated, based on current `p.fire` and urban/rural designation of the neighborhood. 
+2.  Matrices to track health states (`m.M`), costs (`m.C`), and health outcomes (`m.E`) are initialized.
 
-3.  Matrices to track health states (`m.M`), costs (`m.C`), and health outcomes (`m.E`) are initialized.
-
-4.  Run the microsimulation algorithm.
+3.  Run the microsimulation algorithm.
 
     a.  For i = 1 to `n.i`, calculate initial costs health effects.
     b.  For t = 1 to `c.t`, create vector of transition probabilities `v.p` for individual i at cycle t, using the `Probs(...)` function, based on prior health state, whether a fire is experienced, and individual characteristics.
@@ -127,7 +128,7 @@ The following functions are used:
     f.  Close loop for cycles.
     g.  Close loop for individuals.
 
-5.  Results are returned as a list:
+4.  Results are returned as a list:
 
     a.  `m.M`: A matrix of size `n.i` x `n.t+1` containing the health state occupied by each individual at each cycle.
     b.  `m.C`: A matrix of size `n.i` x `n.t+1` containing the costs incurred by each individual at each cycle.
@@ -136,32 +137,32 @@ The following functions are used:
     e.  `te`: Vector of total discounted QALYs per individual.
     f.  `tc_hat`: Mean discounted costs
     g.  `te_hat`: Mean discounted QALYs
-    h.  `m.fire`: Matrix of size `n.neighborhood` x `n.t` containing fire exposure of each individual at each cycle.
-    i.  `m.x`: Matrix containing the individual characteristics of each individual at the end of the time horizon `n.t`.
-    j.  `TS`: A matrix illustrating the state transitions of each individual `n.i` at each cycle `n.t`.
-    k.  `TR`: A matrix of size `n.t`x`v.n` containing the health state distribution trace.\
+    h.  `m.x`: Matrix containing the individual characteristics of each individual at the end of the time horizon `n.t`.
+    i.  `TS`: A matrix illustrating the state transitions of each individual `n.i` at each cycle `n.t`.
+    j.  `TR`: A matrix of size `n.t`x`v.n` containing the health state distribution trace.\
 
 ### Probs
 
 #### Usage:
 
 ```{r Probs function, eval=FALSE}
-Probs(M_it, m.fire_it, m.chars_i)
+Probs(M_it, m.fire_it, m.chars_i, m.smoke.exposure.cum_it)
 ```
 
 #### Arguments:
 
 -   `M_it`: health state occupied by individual i at cycle t (i.e., `m.M[i,t+1]`)
 -   `m.fire_it`: fire experience of individual i at cycle t (i.e., `m.fire[m.x$neighborhood[i],t]`)
--   `m.chars_i`: vector of individual characteristics of individual i (i.e., `m.x[i, ]`)\
+-   `m.chars_i`: vector of individual characteristics of individual i (i.e., `m.x[i, ]`)
+-   `m.smoke.exposure.cum_it`: cumulative smoke exposure of individual i up to cycle t\
 
 #### Details:
 
 1.  Initialize a vector of length `n.s` to hold state transition probabilities.
 
-2.  Calculate `p.PrmD` conditional on prior wildfire smoke exposure.
+2.  Calculate `p.PrmD` conditional on prior wildfire smoke exposure and individual risk modifiers.
 
-3.  Calculate all transitions conditional on the occurrence of a fire.
+3.  Calculate all transitions conditional on the occurrence of a fire and individual risk modifiers.
 
 4.  Assign transition probabilities conditional on current health state.
 

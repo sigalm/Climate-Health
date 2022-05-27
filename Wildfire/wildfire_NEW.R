@@ -1,5 +1,5 @@
 set.seed(12345)
-library(dplyr)
+# library(dplyr)
 
 #### Model inputs ####
 
@@ -28,10 +28,12 @@ r.ActD <- rr.Act*r.HD            # rate of death when acutely injured
 r.PrmD <- rr.Prm*r.HD            # rate of death when permanently injured
 p.ActD <- 1-exp(-r.ActD)         # probability of death when acutely injured
 p.PrmD <- 1-exp(-r.PrmD)         # probability of death when permanently injured
-rp.smoke <- 0.05                 # increase of mortality rate for permanently injured with history of exposure to wildfire
+rp.smoke <- 0.05                 # increase of mortality rate for all with history of smoke exposure conditional on duration of exposure
 
 rr.HD.f <- 1.2                   # risk ratio for healthy -> dead for females
 rr.HAct.f <- 1.4                 # risk ratio for healthy -> acute injury for females
+rr.HD.65 <- 1.3                  # risk ratio for healthy -> dead for those aged 65 or older
+rr.HAct.65 <- 1.5                # risk ratio for healthy -> acute injury for those aged 65 or older
 
 rr.fire.over.time <- 1.05        # additional fire risk each consecutive year
 
@@ -59,7 +61,9 @@ m.x$sex <- rbinom(n.i,1,0.55)      # determine each individual's sex based on a 
 m.x$rural <- rbinom(n.i, 1, 0.30)  # determine each individual's residence based on a binomial dist'n with 0=urban, 1=rural, and p(rural)=0.30
 m.x$exposure <- FALSE              # no previous exposure at the beginning
 
-# set neighborhood based on rural/urban status
+# assign neighborhood based on rural/urban status
+# Note: this may be a very roundabout way of doing this. Might have made more sense to first give everyone a neighborhood based on neighborhood density
+# (i.e., probability of individual i to be in neighborhood k is based on what % of total population lives in k) but this also works. 
 rural_neighborhoods <- c("A","B")
 probs_rural <- c(0.65, 1-0.65)
 urban_neighborhoods <- c("C","D","E")
@@ -69,14 +73,29 @@ all_neighborhoods <- c(rural_neighborhoods, urban_neighborhoods)
 for (k in 1:nrow(m.x[m.x$rural==1, ])) {
   m.x$neighborhood[m.x$rural==1][k] <-  sample(rural_neighborhoods,size=1,prob=probs_rural)
 }
+
 for (k in 1:nrow(m.x[m.x$rural==0, ])) {
   m.x$neighborhood[m.x$rural==0][k] <-  sample(urban_neighborhoods,size=1,prob=probs_urban)
 }
+
 m.x$neighborhood <- as.factor(m.x$neighborhood)
 
 n.neighborhood <- length(all_neighborhoods)
 
-# set household ID based on neighborhood
+
+# Create neighborhood map (the distance in miles between neighborhoods)
+# This will determine how much smoke neighboring communities will be exposed to if there is a fire outside of their neighborhood
+
+neighborhood.map <- matrix(data= 0, nrow=n.neighborhood, ncol=n.neighborhood, dimnames=(list(paste(all_neighborhoods), paste(all_neighborhoods))))
+neighborhood.map[1, ] <-  c(0, 0.5, 1, 3, 5)
+neighborhood.map[2, ] <-  c(0.5, 0, 1, 6, 4)
+neighborhood.map[3, ] <-  c(1,   1, 0, 8, 10)
+neighborhood.map[4, ] <-  c(3,   6, 8, 0, 3)
+neighborhood.map[5, ] <-  c(5,   4,10, 3, 0)
+
+
+
+# set household ID based on neighborhood (household aren't used for now, but will be important for other conditions)
 # mean household size is 4
 m.x$fam_id <- NA
 mean_fam_size <- 4
@@ -86,11 +105,47 @@ for (k in levels(m.x$neighborhood)) {
   family_size <- ceiling(neighborhood_size/mean_fam_size)
   m.x$fam_id[m.x$neighborhood==k] <- sample(fam_count:(fam_count+family_size), size = neighborhood_size, replace=TRUE)
   fam_count <- fam_count+family_size+1
+}
+
+
+
+# Get year over year fire data per neighborhood (or another geographic granularity) and air quality data - since no data yet, create matrix
+
+m.fire <- matrix(nrow=n.neighborhood, ncol=n.t, dimnames = list(paste(all_neighborhoods), paste("cycle",1:n.t)))
+m.smoke.duration <- matrix(data = 0, nrow=n.neighborhood, ncol=n.t, dimnames= list(paste(all_neighborhoods), paste("cycle",1:n.t)))
+fire.intensity <- 1
+
+
+for (t in 1:n.t) {
+  p.fire.tmp <- min(p.fire*rr.fire.over.time^(t-1), 1)                     # calculate fire risk for year t
+  fire.intensity.tmp <- fire.intensity * rr.fire.over.time^(t-1)           # calculate average fire intensity for year t (analogous to fire duration for simplicity)
+  
+  for (k in 1:n.neighborhood) {
+    current_neighborhood <- all_neighborhoods[k]                           # get neighborhood name
+    m.fire[k, t] <- rbinom(1,size=1,prob=(
+      (current_neighborhood %in% rural_neighborhoods)*p.fire.tmp +
+        (current_neighborhood %in% urban_neighborhoods)*min(p.fire.tmp*rr.fire.urban,1)))        # calculate whether fire happened given fire risk and urban/rural designation
+    m.smoke.duration[k, t] <- rnorm(1, mean=fire.intensity.tmp, sd = fire.intensity.tmp/2)*m.fire[k, t]    # calculate number of smoky days for neighborhood k in year t due to fire in neighborhood
+    m.smoke.duration[-k ,t] <- m.smoke.duration[-k, t] + m.smoke.duration[k, t]/neighborhood.map[k, -k]  # calculate ADDITIONAL number of smoky days for neighboring communities given fire in and distance to neighborhood k 
   }
+}
+
+
+# calculate cumulative smoke exposure days over t years
+
+m.smoke.duration.cum <- m.smoke.duration 
+for (t in 1:(n.t-1)) {
+  m.smoke.duration.cum[ , t+1] <- m.smoke.duration.cum[ ,t] + m.smoke.duration[ ,t+1]
+}
+
+
+
+
+
 
 #### Create functions ####
 
-MicroSim <- function(v.M_1, n.i, n.t, p.fire, v.n, m.x, cl, d.c, d.e, TR.out = TRUE, TS.out = TRUE, intn=FALSE, seed = 1) {
+MicroSim <- function(v.M_1, n.i, n.t, m.fire, m.smoke.duration.cum, v.n, m.x, cl, d.c, d.e, TR.out = TRUE, TS.out = TRUE, intn=FALSE, seed = 1) {
   
   # Arguments:
   # v.M_1: vector of initial states for each individual
@@ -116,19 +171,7 @@ MicroSim <- function(v.M_1, n.i, n.t, p.fire, v.n, m.x, cl, d.c, d.e, TR.out = T
   
   
   # initialize matrices to capture fires, health states, costs, and health outcomes each cycle:
-  
-  m.fire <- matrix(nrow=n.neighborhood, ncol=n.t, dimnames = list(paste(all_neighborhoods), paste("cycle",1:n.t)))   
-
-  for (k in 1:n.neighborhood) {
-     current_neighborhood <- all_neighborhoods[k]
-     
-     for (t in 1:n.t) {
-      p.fire.tmp <- min(p.fire*rr.fire.over.time^(t-1), 1)
-      m.fire[k, t] <- rbinom(1,size=1,prob=(
-        (current_neighborhood %in% rural_neighborhoods)*p.fire.tmp + 
-          (current_neighborhood %in% urban_neighborhoods)*min(p.fire.tmp*rr.fire.urban,1))) 
-    }
-  }
+  # 
   
   
   m.M <- m.C <- m.E <- matrix(nrow=n.i, ncol=n.t+1, dimnames = list(paste("ind", 1:n.i), paste("cycle",0:n.t)))  
@@ -145,13 +188,17 @@ MicroSim <- function(v.M_1, n.i, n.t, p.fire, v.n, m.x, cl, d.c, d.e, TR.out = T
                       m.chars=m.x[i, ], cl=1)                     # estimate QALYs for individual i 
     
     for (t in 1:n.t) {
-      v.p <- Probs(M_it=m.M[i,t], m.fire_it=m.fire[m.x$neighborhood[i], t], m.chars_i=m.x[i, ])               # calculate the transition probability for individual i at cycle t
-      m.M[i, t+1] <- sample(v.n, prob=v.p, size=1)                                          # sample the next health state given probability to transition
-      m.C[i, t+1] <- Costs(M_it=m.M[i, t+1], intervention=intn)                             # estimate costs for individual i at cycle t+1
-      m.E[i, t+1] <- Effs(M_it=m.M[i, t+1], intervention=intn, m.chars=m.x[i, ], cl)        # estimate QALYs for individual i at cycle t+1
-      m.x$age[i] <- m.x$age[i] + cl                                                         # increase age by cycle length
+      neighborhood_index <- match(m.x$neighborhood[i], all_neighborhoods)
+      v.p <- Probs(M_it=m.M[i,t], 
+                   m.fire_it=m.fire[neighborhood_index, t], 
+                   m.chars_i=m.x[i, ], 
+                   m.smoke.duration.cum[neighborhood_index, t])                                   # calculate the transition probability for individual i at cycle t
+      m.M[i, t+1] <- sample(v.n, prob=v.p, size=1)                                                # sample the next health state given probability to transition
+      m.C[i, t+1] <- Costs(M_it=m.M[i, t+1], intervention=intn)                                   # estimate costs for individual i at cycle t+1
+      m.E[i, t+1] <- Effs(M_it=m.M[i, t+1], intervention=intn, m.chars=m.x[i, ], cl)              # estimate QALYs for individual i at cycle t+1
+      m.x$age[i] <- m.x$age[i] + cl                                                               # increase age by cycle length
       
-      if (m.fire[location, t]==1) {m.x$exposure[i] <-  TRUE}        # if there has been a fire, set exposure history to TRUE, otherwise keep the same
+      if (m.fire[neighborhood_index, t]==1) {m.x$exposure[i] <-  TRUE}        # if there has been a fire, set exposure history to TRUE, otherwise keep the same
       
     } # close loop for cycles
     
@@ -188,7 +235,7 @@ MicroSim <- function(v.M_1, n.i, n.t, p.fire, v.n, m.x, cl, d.c, d.e, TR.out = T
   
   # return outputs as a list
   
-  results <- list(m.M=m.M, m.C=m.C, m.E=m.E, tc=tc, te=te, tc_hat=tc_hat, te_hat=te_hat, m.fire=m.fire, m.x=m.x, TS=TS, TR=TR)
+  results <- list(m.M=m.M, m.C=m.C, m.E=m.E, tc=tc, te=te, tc_hat=tc_hat, te_hat=te_hat, m.x=m.x, TS=TS, TR=TR)
   return(results)
   
 }
@@ -196,26 +243,32 @@ MicroSim <- function(v.M_1, n.i, n.t, p.fire, v.n, m.x, cl, d.c, d.e, TR.out = T
 
 # Create the probabilities function
 
-Probs <- function(M_it, m.fire_it, m.chars_i) {
+Probs <- function(M_it, m.fire_it, m.chars_i, m.smoke.duration.cum_it) {
   # M_it: health state occupied by individual i at cycle t
   # m.fire_it: fire experience of individual i at cycle t (binary)
-  # m.chars_i: individual characteristics of individual i
+  # m.chars_i: individual characteristics of individual i (row i of m.x)
   
   v.p.it <- rep(NA, n.s)   # initialize vector of state transition probabilities
   names(v.p.it) <- v.n     # name columns with the health states
   
   # update v.p.it with appropriate probabilities (note: v.n is H; Act; Prm; D)
   
-  p.PrmD_tmp <- 1-exp(-r.PrmD * (1 + rp.smoke * m.chars_i$exposure))*m.fire_it     # calculate p.PrmD conditional on previous exposure
-  p.HAct_tmp <- p.HAct*m.fire_it
-  p.HD_tmp <- p.HD*m.fire_it
+  p.PrmD_it <- min(1, m.fire_it *
+                     (1-exp(-r.PrmD * (1 + rp.smoke * m.smoke.duration.cum_it))))     # calculate p.PrmD conditional on cumulative exposure
+  p.HAct_it <- min(1, p.HAct * m.fire_it * 
+                     (m.chars_i$sex * rr.HAct.f + (1-m.chars_i$sex)) *          # risk modification for sex
+                     ifelse(m.chars_i$age>=65, rr.HAct.65,1))                   # risk modification for age
+  p.HD_it <- min(1, p.HD * m.fire_it * 
+                   (m.chars_i$sex * rr.HD.f + (1-m.chars_i$sex)) *              # risk modification for sex
+                   ifelse(m.chars_i$age>=65, rr.HD.65,1))                       # risk modification for age
   
-  v.p.it[M_it == "H"] <- c(1-p.HAct_tmp-p.HD_tmp , p.HAct_tmp, 0, p.HD_tmp)
+  v.p.it[M_it == "H"] <- c(1-p.HAct_it-p.HD_it , p.HAct_it, 0, p.HD_it)
   v.p.it[M_it == "Act"] <- c(p.ActH, 1-p.ActH-p.ActPrm-p.ActD, p.ActPrm, p.ActD)
-  v.p.it[M_it == "Prm"] <- c(0, 0, 1-p.PrmD_tmp, p.PrmD_tmp)
+  v.p.it[M_it == "Prm"] <- c(0, 0, 1-p.PrmD_it, p.PrmD_it)
   v.p.it[M_it == "D"] <- c(0, 0, 0, 1)
   
-  ifelse(sum(v.p.it) == 1, return(v.p.it), print("Probabilities do not sum to 1"))     # return error if probabilities do not sum to 1
+  
+  ifelse(all.equal(sum(v.p.it), 1), return(v.p.it), print(c("Probabilities do not sum to 1", v.p.it, sum(v.p.it))))     # return error if probabilities do not sum to 1
 }
 
 
@@ -256,7 +309,7 @@ Effs <- function(M_it, intervention=FALSE, m.chars=NULL, cl=1) {
 
 #### Run simulation ####
 
-sim <- MicroSim(v.M_1, n.i, n.t, p.fire, v.n, m.x, cl, d.c, d.e, TR.out = TRUE, TS.out = TRUE, intn=FALSE, seed = 1)
+sim <- MicroSim(v.M_1, n.i, n.t, m.fire, m.smoke.duration.cum, v.n, m.x, cl, d.c, d.e, TR.out = TRUE, TS.out = TRUE, intn=FALSE, seed = 1)
 
 
 #### Next steps ####
