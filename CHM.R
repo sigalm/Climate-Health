@@ -11,20 +11,32 @@ source("Effs.R")
 
 #### 1) Population Inputs #### 
 
-n.i <- 1000                      # number of individuals
-n.t <- 20                        # time horizon
-cl <- 1                          # length of each cycle (year)
-v.n <- c("H", "Act", "Prm", "D") # possible health states: Healthy, Acute injury, Permanent injury, Dead
-n.s <- length(v.n)               # number of health states
-initStates <- rep(v.n[1], n.i)   # everyone begins in the Healthy state
+n.i <- 1000                     # number of individuals
+n.t <- 52/2                       # time horizon (in cycles)
+cl <- 2/52                      # length of each cycle (in years)
+v.n_asthma <- c(0,   # No asthma 
+                1,   # Asthma - controlled
+                21,  # Asthma exacerbation - oral corticostreroid (OCS) ONLY
+                22,  # Asthma exacerbation - ED visit ONLY
+                212, # Asthma exacerbation - OCS + ED visit
+                223, # Asthma exacerbation - ED + hospitalization
+                50,  # Dead - asthma
+                100  # Dead - other cause
+)
+
+# add asthma with inhaled therapy?
+ 
+n.s_asthma <- length(v.n_asthma)               # number of health states
+initStates <- sample(v.n_asthma[1:3], size = n.i, 
+                     prob = c(0.7, 0.2, 0.1), replace=TRUE)   # determine mix of starting states
 d.c <- d.e <- 0.03               # 3% discount rate for both costs and QALYs
-v.intn <- c("No prescribed burning", "Prescribed burning")    # strategy names
+v.intn <- c("intervention 1", "intervention 2")    # strategy names
 
-birthRate_bl <- 52.4/1000
-birthRate_change <- -0.035
+birthRate_bl <- (52.4/1000) * cl   # convert into rate for cycle length
+birthRate_change <- -0.035 * cl
 
-allCauseMortality_bl <- 583.1/100000
-allCauseMortality_change <- -2.2/100
+allCauseMortality_bl <- (583.1/100000) * cl  
+allCauseMortality_change <- (-2.2/100) * cl
 
 # Individual characteristics
 
@@ -34,6 +46,7 @@ m.x$age <- floor(rnorm(n.i,48,5))  # determine each individual's age based on a 
 m.x$sex <- rbinom(n.i,1,0.55)      # determine each individual's sex based on a binomial dist'n with 0=male, 1=female, and p(female)=0.55
 m.x$rural <- rbinom(n.i, 1, 0.30)  # determine each individual's residence based on a binomial dist'n with 0=urban, 1=rural, and p(rural)=0.30
 m.x$exposure <- FALSE              # no previous exposure at the beginning
+m.x$asthma <- initStates
 
 # assign neighborhood based on rural/urban status
 # Note: this may be a very roundabout way of doing this. Might have made more sense to first give everyone a neighborhood based on neighborhood density
@@ -82,19 +95,86 @@ for (k in allNeighborhoods) {
 
 # Transition probabilities 
 
-p.fire <- 0.30                   # probability that a wildfire occurs 
-rr.fire.urban <- 0.25            # risk ratio for fire in urban area versus rural
-p.HD <- 0.03                     # probability to die when healthy
-p.HAct <- 0.1                    # probability of acute injury when healthy
-p.ActH <- 0.75                   # probability to become healthy when acutely injured
-p.ActPrm <- 0.08                 # probability to become permanently injured when acutely injured
-rr.Act <- 1.25                   # rate ratio of death when acutely injured vs healthy
-rr.Prm <- 2                      # rate ratio of death when permanently injured vs healthy
-r.HD <- -log(1-p.HD)             # rate of death when healthy
-r.ActD <- rr.Act*r.HD            # rate of death when acutely injured
-r.PrmD <- rr.Prm*r.HD            # rate of death when permanently injured
-p.ActD <- 1-exp(-r.ActD)         # probability of death when acutely injured
-p.PrmD <- 1-exp(-r.PrmD)         # probability of death when permanently injured
+p.0.1 <- 0.05
+
+p.1.21 <- 0.12  # controlled asthma to OCS burst
+p.1.22 <- 0.05
+p.1.212 <- 0.1
+p.1.223 <- 0.02
+
+p.21.1 <- 0.8
+p.21.22 <- 0.06
+p.21.212 <- 0.06
+p.21.223 <- 0.01
+
+p.22.1 <- 0.1
+p.22.21 <- 0.75
+p.22.212 <- 0.05
+p.22.223 <- 0.03
+
+p.212.1 <- 0.05
+p.212.21 <- 0.4
+p.212.22 <- 0.2
+p.212.223 <- 0.1
+
+p.223.1 <- 0.01
+p.223.21 <- 0.75
+p.223.22 <- 0.02
+p.223.212 <- 0.1
+
+p.asthmaMort <- 0.002
+
+# 
+# 
+# #                from:    Successful |  Suboptimal | PrimaryCare | Hospital | Failure
+# transitionGrid <- matrix(c( 0.306,         0.058,       0.001,       0.004,   0.002,    # to: Successful control
+#                             0.064,         0.382,       0.001,       0.003,   0.009,    # to: Suboptimal control
+#                             0.001,         0.001,       0.001,       0.001,   0.001,    # to: Primary care managed exacerbation
+#                             0.003,         0.003,       0.001,       0.002,   0.001,    # to: Hospital managed exacerbation
+#                             0.000,         0.000,       0.000,       0.000,   0.079),   # to: Treatment failure
+#                          nrow=n.s_asthma, ncol=n.s_asthma, dimnames = list(v.n_asthma,v.n_asthma))
+# # distn of the destination by state. e.g, of ppl with succesful, ~88% stay there, 10% go to suboptimal
+# # 10% seek primary care, 2% go to hospital, 0.2% die. 100% of ppl in each state has to have a destination. 
+# # maybe take another look at papers that use markov disease states and microsim. 
+# transitionGrid <- prop.table(transitionGrid, margin=1)
+# 
+# m.transitionProbs <-  melt(transitionGrid)
+# colnames(m.transitionProbs) <-  c("from", "to","prob")
+# 
+# 
+# #                from:    Successful |  Suboptimal | PrimaryCare | Hospital | Failure
+# m.transitionProbs$sex_adj <- c(1,          1.05,        1.05,       1.05,         1,       # to: Successful control 
+#                                0.95,       1,           1.05,       1.05,         1,       # to: Suboptimal control
+#                                0.95,       0.95,        1,          1.05,         1,       # to: Primary care managed exacerbation
+#                                0.95,       0.95,        0.95,       1,            1,       # to: Hospital managed exacerbation
+#                                0.95,       0.95,        0.95,       0.95,         1)       # to: Treatment failure
+#                                
+# #                from:    Successful |  Suboptimal | PrimaryCare | Hospital | Failure
+# m.transitionProbs$age_adj <- c(1,          1.05,        1.05,       1.05,         1,       # to: Successful control 
+#                                0.95,       1,           1.05,       1.05,         1,       # to: Suboptimal control
+#                                0.95,       0.95,        1,          1.05,         1,       # to: Primary care managed exacerbation
+#                                0.95,       0.95,        0.95,       1,            1,       # to: Hospital managed exacerbation
+#                                0.95,       0.95,        0.95,       0.95,         1)       # to: Treatment failure
+# 
+# #                from:    Successful |  Suboptimal | PrimaryCare | Hospital | Failure
+# m.transitionProbs$fire_adj <- c(1,          1,           1   ,       1   ,         1,       # to: Successful control 
+#                                 1.20,       1,           1   ,       1   ,         1,       # to: Suboptimal control
+#                                 1.30,       0.95,        1,          1   ,         1,       # to: Primary care managed exacerbation
+#                                 1.60,       0.95,        0.95,       1,            1,       # to: Hospital managed exacerbation
+#                                 1.15,       0.95,        0.95,       0.95,         1)       # to: Treatment failure
+
+
+# p.HD <- 0.03                     # probability to die when healthy
+# p.HAct <- 0.1                    # probability of acute injury when healthy
+# p.ActH <- 0.75                   # probability to become healthy when acutely injured
+# p.ActPrm <- 0.08                 # probability to become permanently injured when acutely injured
+# rr.Act <- 1.25                   # rate ratio of death when acutely injured vs healthy
+# rr.Prm <- 2                      # rate ratio of death when permanently injured vs healthy
+# r.HD <- -log(1-p.HD)             # rate of death when healthy
+# r.ActD <- rr.Act*r.HD            # rate of death when acutely injured
+# r.PrmD <- rr.Prm*r.HD            # rate of death when permanently injured
+# p.ActD <- 1-exp(-r.ActD)         # probability of death when acutely injured
+# p.PrmD <- 1-exp(-r.PrmD)         # probability of death when permanently injured
 rp.smoke <- 0.05                 # increase of mortality rate for all with history of smoke exposure conditional on duration of exposure
 
 rr.HD.f <- 1.2                   # risk ratio for healthy -> dead for females
@@ -104,21 +184,26 @@ rr.HAct.65 <- 1.5                # risk ratio for healthy -> acute injury for th
 
 # Cost and utility inputs
 
-c.H <- 0                         # cost of remaining healthy
-c.Act <- 10000                   # cost of acute injury
-c.Prm <- 20000                   # cost of permanent injury
-c.intn <- 5000                   # cost of intervention
-c.fire <- 15000                  # cost of fire occurring e.g., infrastructure damage, rebuilding homes
+v.costs <- c(0, 500, 1000, 5000, 10000)
+v.utilities <- c(1, 0.75, 0.65, 0.6, 0.6)
 
-u.H <- 1                         # utility when healthy
-u.Act <- 0.75                    # utility when acutely injured
-u.Prm <- 0.65                    # utility when permanently injured
-u.intn <- u.Act                  # utility with intervention (in this case, intervention reduces fire risk and doesn't affect utility)
-ru.ActPrm <- 0                   # decrease in utility with every additional year being injured (assume same for now)
+# c.H <- 0                         # cost of remaining healthy
+# c.Act <- 10000                   # cost of acute injury
+# c.Prm <- 20000                   # cost of permanent injury
+# c.intn <- 5000                   # cost of intervention
+# c.fire <- 15000                  # cost of fire occurring e.g., infrastructure damage, rebuilding homes
+# 
+# u.H <- 1                         # utility when healthy
+# u.Act <- 0.75                    # utility when acutely injured
+# u.Prm <- 0.65                    # utility when permanently injured
+# u.intn <- u.Act                  # utility with intervention (in this case, intervention reduces fire risk and doesn't affect utility)
+# ru.ActPrm <- 0                   # decrease in utility with every additional year being injured (assume same for now)
 
 
 #### 2) Climate Data ####
 
+p.fire <- 0.30                   # probability that a wildfire occurs 
+rr.fire.urban <- 0.25            # risk ratio for fire in urban area versus rural
 rr.fireOverTime <- 1.05          # additional fire risk each consecutive year
 
 # Get year over year fire data per neighborhood (or another geographic granularity) and air quality data - since no data yet, create matrix
@@ -142,7 +227,7 @@ for (t in 1:n.t) {
 }
 
 # calculate cumulative smoke exposure days over t years
-# NOTE: this will need to be calculated per individual, because someone born in the last year will only have that year as their exposure!!!
+# NOTE: this will need to be calculated per individual, because someone born in the last year will only have that year as their exposure
 
 m.smoke.duration.cum <- m.smoke.duration 
 for (t in 1:(n.t-1)) {
@@ -153,7 +238,18 @@ for (t in 1:(n.t-1)) {
 
 #### 3) Run Model ####
 
-sim <- MicroSim(initStates, n.i, n.t, m.fire, m.smoke.duration.cum, v.n, m.x, cl, birthRate_bl, birthRate_change, allCauseMortality_bl, allCauseMortality_change,d.c, d.e, TR.out = TRUE, TS.out = TRUE, intn=FALSE, seed = 1)
+sim <- MicroSim(initStates, 
+                n.i, n.t, 
+                m.fire, m.smoke.duration.cum, 
+                v.n_asthma, 
+                m.x, 
+                cl, 
+                birthRate_bl, birthRate_change, 
+                allCauseMortality_bl, allCauseMortality_change,
+                d.c, d.e, 
+                TR.out = TRUE, TS.out = FALSE, 
+                intn=FALSE, 
+                seed = 1)
 
 #### 4) Tables and Figures ####
 
@@ -161,6 +257,10 @@ sim <- MicroSim(initStates, n.i, n.t, m.fire, m.smoke.duration.cum, v.n, m.x, cl
 library(ggplot2)
 library(reshape2)
 library(scales)
+
+
+# add figure with cycle on x axis, %by state on the vertical axis. A series of lines and the space in between the lines is shaded
+# in one sim you start with everyone starting at 1. then start with everyone at 0 but with some small risk of developing asthma
 
 trace <- as.data.frame(sim$TR)
 trace$cycle <- factor(0:n.t)
