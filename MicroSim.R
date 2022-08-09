@@ -25,16 +25,16 @@ MicroSim <- function(initStates,                  # vector of initial health sta
   v.dwc <- 1 / (1 + d.c) ^ (0:n.t)     # calculate discount weights for costs per cycle
   v.dwe <- 1 / (1 + d.e) ^ (0:n.t)     # calculate discount weights for QALYs per cycle
   
-  v.birthRate <- birthRate_bl * (1-birthRate_change)^(0:n.t)                  # calculate birth rates per cycle
-  v.deathRate <- allCauseMortality_bl * (1-allCauseMortality_change)^(0:n.t+1)  # calculate background death rates per cycle
-
+  v.birthRate <- birthRate_bl * (1+birthRate_change)^(0:n.t)                  # calculate birth rates per cycle
+  v.deathRate <- allCauseMortality_bl * (1+allCauseMortality_change)^(0:n.t+1)  # calculate background death rates per cycle
+  
   # initialize matrices to capture fires, health states, costs, and health outcomes each cycle:
   
   m.M <- m.C <- m.E <- matrix(nrow=n.i, ncol=n.t+1, dimnames = list(paste("ind", 1:n.i), paste("cycle",0:n.t)))  
   
   m.M[ ,1] <- initStates    
-  # m.C[ ,1] <- Costs(M_it=m.M[ ,1], intervention = intn)
-  # m.E[ ,1] <- Effs(M_it=m.M[ ,1], intervention=intn, x_i=m.x)
+  m.C[ ,1] <- Costs(M_it=m.M[ ,1], intervention = intn)
+  m.E[ ,1] <- Effs(M_it=m.M[ ,1], intervention=intn, x_i=m.x)
   
   v.totalPop  <- rep(NA, n.t+1)
   v.totalPop[1] <- n.i
@@ -42,7 +42,7 @@ MicroSim <- function(initStates,                  # vector of initial health sta
   for (t in 1:n.t) {
     
     if (debug==TRUE) {cat("### Cycle =", t, "\n")}
-  
+    
     totalBirths_t <- 0     # initialize variable to keep track of number of births (define this in the loop because we want it to reset each cycle)
     
     
@@ -59,8 +59,9 @@ MicroSim <- function(initStates,                  # vector of initial health sta
                    smoke.duration.cum_it = m.smoke.duration.cum[neighborhood_index, t],
                    deathRate_t = v.deathRate[t+1])
       m.M[i, t+1] <- sample(v.n_asthma, prob=v.p, size=1)                             # sample the next health state given probability to transition
-
-      # m.C[i, t+1] <- Costs(M_it=m.M[i, t+1], intervention=intn)                       # estimate costs for individual i at cycle t+1
+      
+      m.C[i, t+1] <- Costs(M_it=m.M[i, t+1], intervention=intn)                       # estimate costs for individual i at cycle t+1
+      m.E[i, t+1] <- Effs(M_it = m.M[i, t+1], intervention = intn, x_i=m.x[i, ])      # estimate QALYs for individual i at cycle t+1
       
       m.x$age[i] <- m.x$age[i] + cl                                                   # increase age by cycle length
       
@@ -90,15 +91,15 @@ MicroSim <- function(initStates,                  # vector of initial health sta
             new_M <-new_C <- new_E <- rep(NA,n.t+1)
             new_M[t+1] <- sample(v.n_asthma[1:2], prob=c(0.8, 0.2), size=1)                                                 # Add initial health state of new child to m.M
             m.M <- rbind(m.M, new_M)
-            # new_C[t+1] <- Costs(M_it=new_M[t+1], intervention = intn)
-            # m.C <- rbind(m.C, new_C)
-            # new_E[t+1] <- Effs(M_it=new_M[t+1], intervention=intn, x_i=new_x)
-            # m.E <- rbind(m.E, new_E)
+            new_C[t+1] <- Costs(M_it=new_M[t+1], intervention = intn)
+            m.C <- rbind(m.C, new_C)
+            new_E[t+1] <- Effs(M_it=new_M[t+1], intervention=intn, x_i=new_x)
+            m.E <- rbind(m.E, new_E)
           }
         }  
         totalBirths_t <- totalBirths_t + kids_it        # calculate total number of births in cycle t
         
- 
+        
       }
       
       
@@ -110,18 +111,20 @@ MicroSim <- function(initStates,                  # vector of initial health sta
   }    # close loop for cycles
   
   
- # tc <- m.C %*% v.dwc     # total discounted costs per individual
- # te <- m.E %*% v.dwe     # total discounted QALYs per individual
- # tc_hat <- mean(tc, na.rm=TRUE)      # average discounted costs
- # te_hat <- mean(te, na.rm=TRUE)      # average discounted QALYS
+  tc <- m.C %*% v.dwc     # total discounted costs per individual
+  te <- m.E %*% v.dwe     # total discounted QALYs per individual
+  tc_hat <- mean(tc, na.rm=TRUE)      # average discounted costs
+  te_hat <- mean(te, na.rm=TRUE)      # average discounted QALYS
   
-
+  
   
   if (TR.out == TRUE) {                                    # create the distribution trace 
-    TR <- t(apply(m.M, 2, function(x) table(factor(x, levels=v.n_asthma, ordered=TRUE))))
-    TR <- TR/v.totalPop 
-    colnames(TR) <- v.n_asthma
-    rownames(TR) <- paste("cycle", 0:n.t)
+    TR.absolute <- t(apply(m.M, 2, function(x) table(factor(x, levels=v.n_asthma, ordered=TRUE))))
+    TR.proportion <- TR.absolute/v.totalPop 
+    colnames(TR.absolute) <- v.n_asthma
+    rownames(TR.absolute) <- paste("cycle", 0:n.t)
+    colnames(TR.proportion) <- v.n_asthma
+    rownames(TR.proportion) <- paste("cycle", 0:n.t)
   } else {
     TR <- NULL
   }
@@ -130,14 +133,15 @@ MicroSim <- function(initStates,                  # vector of initial health sta
   
   results <- list(
     m.M=m.M, 
-   # m.C=m.C,
-   # m.E=m.E,
-   # tc=tc,
-   # te=te,
-   # tc_hat=tc_hat,
-   # te_hat=te_hat,
+    m.C=m.C,
+    m.E=m.E,
+    tc=tc,
+    te=te,
+    tc_hat=tc_hat,
+    te_hat=te_hat,
     m.x=m.x, 
-    TR=TR)
+    TR.absolute=TR.absolute,
+    TR.proportion=TR.proportion)
   
   return(results)
   

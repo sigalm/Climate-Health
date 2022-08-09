@@ -1,6 +1,8 @@
 ###################### Climate - Health Modeling v2.0 ########################
 
 ##################
+rm(list = ls()) # remove any variables in R's memory
+
 # call functions
 source("MicroSim.R")
 source("Probs.R")
@@ -30,7 +32,7 @@ v.n_asthma <- c("0",   # No asthma
  
 n.s_asthma <- length(v.n_asthma)               # number of health states
 initStates <- sample(v.n_asthma, size = n.i, 
-                     prob = c(0.7, 0.22, 0.05, 0.01, 0.015, 0.004, 0.0005, 0.0005), replace=TRUE)   # determine mix of starting states
+                     prob = c(0.7, 0.163, 0.107, 0.01, 0.015, 0.004, 0.0005, 0.0005), replace=TRUE)   # determine mix of starting states
 d.c <- d.e <- 0.03               # 3% discount rate for both costs and QALYs
 # v.intn <- c("intervention 1", "intervention 2")    # strategy names
 # add an intervention at a non-0 cycle
@@ -167,11 +169,13 @@ for (t in 1:(n.t-1)) {
   m.smoke.duration.cum[ , t+1] <- m.smoke.duration.cum[ ,t] + m.smoke.duration[ ,t+1]
 }
 
-
+# create the No Fire matrix
+m.fire.0 <- m.fire
+m.fire.0[m.fire>0] <- 0
 
 #### 3) Run Model ####
 
-sim <- MicroSim(initStates, 
+sim_fire <- MicroSim(initStates, 
                 n.i, n.t, 
                 m.fire, m.smoke.duration.cum, 
                 v.n_asthma, 
@@ -185,6 +189,21 @@ sim <- MicroSim(initStates,
                 seed = 1,
                 debug = FALSE)
 
+sim_no_fire <- MicroSim(initStates, 
+                     n.i, n.t, 
+                     m.fire=m.fire.0, m.smoke.duration.cum, 
+                     v.n_asthma, 
+                     m.x, 
+                     cl, 
+                     birthRate_bl, birthRate_change, 
+                     allCauseMortality_bl, allCauseMortality_change,
+                     d.c, d.e, 
+                     TR.out = TRUE, 
+                     intn=FALSE, 
+                     seed = 1,
+                     debug = FALSE)
+
+
 #### 4) Tables and Figures ####
 
 
@@ -195,68 +214,84 @@ library(RColorBrewer)
 library(ggthemes)
 
 
-# add figure with cycle on x axis, %by state on the vertical axis. A series of lines and the space in between the lines is shaded
 # in one sim you start with everyone starting at 1. then start with everyone at 0 but with some small risk of developing asthma
 
+############ Cost-effectiveness analysis #############
+# store the mean costs (and the MCSE) of each strategy in a new variable v.C (vector costs)
+v.C  <- c(sim_fire$tc_hat, sim_no_fire$tc_hat) 
+se.C <- c(sd(sim_fire$tc), sd(sim_no_fire$tc)) / sqrt(n.i)
+# store the mean QALYs (and the MCSE) of each strategy in a new variable v.E (vector health outcomes)
+v.E  <- c(sim_fire$te_hat, sim_no_fire$te_hat)
+se.E <- c(sd(sim_fire$te), sd(sim_no_fire$te)) / sqrt(n.i)
+
+delta.C <- v.C[2] - v.C[1]                   # calculate incremental costs
+delta.E <- v.E[2] - v.E[1]                   # calculate incremental QALYs
+# se.delta.E <- sd(sim_no_fire$te - sim_fire$te) / sqrt(n.i) # Monte Carlo squared error (MCSE) of incremental costs
+# se.delta.C <- sd(sim_no_fire$tc - sim_fire$tc) / sqrt(n.i) # Monte Carlo squared error (MCSE) of incremental QALYs
+ICER    <- delta.C / delta.E                 # calculate the ICER
+results <- c(delta.C, delta.E, ICER)         # store the values in a new variable
+
+
+# Create full incremental cost-effectiveness analysis table
+table_micro <- data.frame(
+  c(round(v.C, 0)),           # costs per arm
+  # c(round(se.C, 0), ""),           # MCSE for costs
+  c(round(v.E, 3)),           # health outcomes per arm
+  # c(round(se.E, 3), ""),           # MCSE for health outcomes
+  c("", round(delta.C, 0)),  # incremental costs
+  # c("", round(se.delta.C, 0),""),  # MCSE for incremental costs
+  c("", round(delta.E, 3)),  # incremental QALYs 
+  # c("", round(se.delta.E, 3),""),  # MCSE for health outcomes (QALYs) gained
+  c("", round(ICER, 0))   # ICER
+)
+rownames(table_micro) <- c("fire", "no fire")  # name the rows
+colnames(table_micro) <- c("Costs",   "QALYs", "Incremental Costs", "QALYs Gained", "ICER") # name the columns
+table_micro  # print the table 
+
+
+####### Make figures ######
 theme_set(theme_few())
 mycolors <- brewer.pal(n=8, name="Set3")
 
-trace <- as.data.frame(sim$TR)
+trace <- as.data.frame(sim_fire$TR.absolute)
 trace$cycle <- factor(0:n.t)
-trace_long <- melt(data=trace,id.vars="cycle", variable.name="state", value.name="proportion")
+trace_long <- melt(data=trace,id.vars="cycle", variable.name="state", value.name="number_of_people")
+
+states <- c('No asthma',
+            'Well-controlled asthma',
+            'Exacerbation - OCS',
+            'Exacerbation - ED visit',
+            'Exacerbation - OCS + ED visit',
+            'Exacerbation - ED visit + hopsitalization',
+            'Death - asthma',
+            'Death - other cause')
 
 fig_trace <- ggplot(trace_long, aes(x=cycle, y=proportion*100, group=state, color=state, linetype=state)) +
   geom_line(lwd=1) +
-  labs(title = "Health states over time", x="cycle", y="% of population",
+  labs(title = "Health states over time, with fires", x="cycle", y="% of population",
        color='state', linetype='state') +
-  scale_color_discrete(labels=c('No asthma',
-                               'Well-controlled asthma',
-                               'Exacerbation - OCS',
-                               'Exacerbation - ED visit',
-                               'Exacerbation - OCS + ED visit',
-                               'Exacerbation - ED visit + hopsitalization',
-                               'Death - asthma',
-                               'Death - other cause'))+
-  scale_linetype_discrete(labels=c('No asthma',
-                                'Well-controlled asthma',
-                                'Exacerbation - OCS',
-                                'Exacerbation - ED visit',
-                                'Exacerbation - OCS + ED visit',
-                                'Exacerbation - ED visit + hopsitalization',
-                                'Death - asthma',
-                                'Death - other cause'))
+  scale_color_discrete(labels=states)+
+  scale_linetype_discrete(labels=states)
 # +
 #   ylim(0,30)
 # ggsave("wildfire_trace.tiff",fig_trace,units = "in",w=10,h=7)
 
-fig_trace_stacked <- ggplot(trace_long, aes(x = cycle, y = proportion*100, group=state, fill = state, order = dplyr::desc(state))) +
+fig_trace_stacked <- ggplot(trace_long, aes(x = cycle, y = number_of_people, group=state, fill = state, order = dplyr::desc(state))) +
   geom_area(alpha = .6) +
   geom_line(position = "stack", size = .2) +
-  labs(title = "Health states over time", x="cycle", y="% of population") +
+  labs(title = "Health states over time, with fires", x="cycle", y="Number in state") +
   scale_fill_manual(values=mycolors, 
-                      labels=c('No asthma',
-                                'Well-controlled asthma',
-                                'Exacerbation - OCS',
-                                'Exacerbation - ED visit',
-                                'Exacerbation - OCS + ED visit',
-                                'Exacerbation - ED visit + hopsitalization',
-                                'Death - asthma',
-                                'Death - other cause')) 
+                      labels=states) 
 
-fig_trace_stacked_zoom <-  ggplot(trace_long[trace_long$state!=0, ], aes(x = cycle, y = proportion*100, group=state, fill = state, order = dplyr::desc(state))) +
+fig_trace_stacked_zoom <-  ggplot(trace_long[trace_long$state!="0", ], aes(x = cycle, y = number_of_people, group=state, fill = state, order = dplyr::desc(state))) +
   geom_area(alpha = .6) +
   geom_line(position = "stack", size = .2) +
-  labs(title = "Health states over time", x="cycle", y="% of population") +
+  labs(title = "Health states over time", x="cycle", y="Number in state") +
   scale_fill_manual(values=mycolors[2:8], 
-                    labels=c('Well-controlled asthma',
-                             'Exacerbation - OCS',
-                             'Exacerbation - ED visit',
-                             'Exacerbation - OCS + ED visit',
-                             'Exacerbation - ED visit + hopsitalization',
-                             'Death - asthma',
-                             'Death - other cause')) 
+                    labels=states[2:8]) 
 
-
+# make this graph not based on proportions but on proportion * number in cohort (including dead people)
+# then also make without fires...
 # Add to the above graph indicators on cycles where a fire happened
 
 fig_trace2 <- ggplot(trace_long, aes(x=cycle, y=proportion*100, group=state)) +
@@ -267,7 +302,7 @@ fig_trace2 <- ggplot(trace_long, aes(x=cycle, y=proportion*100, group=state)) +
 # larger font, better labels 
 # experiment with different values
 
-mean_costs <- melt(colMeans(sim$m.C), value.name = "mean_cost") 
+mean_costs <- melt(colMeans(sim$m.C, na.rm=TRUE), value.name = "mean_cost") 
 mean_costs$cycle <- factor(0:n.t)
 
 fig_costs <- ggplot(data=mean_costs, aes(x=cycle, y=mean_cost)) +
