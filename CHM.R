@@ -15,12 +15,12 @@ source("multisheet2array.R")
 
 #### 1) Population Inputs #### 
 
-n.i <- 1000                     # number of individuals
-n.t <- 52/2                       # time horizon (in cycles)
+n.i <- 5000                     # number of individuals
+n.t <- 52/2                     # time horizon (in cycles)
 cl <- 2/52                      # length of each cycle (in years)
 v.n_asthma <- c("0",   # No asthma 
                 "1",   # Asthma - controlled
-                "21",  # Asthma exacerbation - oral corticostreroid (OCS) ONLY
+                "21",  # Asthma exacerbation - oral corticosteroid (OCS) ONLY
                 "22",  # Asthma exacerbation - ED visit ONLY
                 "212", # Asthma exacerbation - OCS + ED visit
                 "223", # Asthma exacerbation - ED + hospitalization
@@ -32,25 +32,28 @@ v.n_asthma <- c("0",   # No asthma
  
 n.s_asthma <- length(v.n_asthma)               # number of health states
 initStates <- sample(v.n_asthma, size = n.i, 
-                     prob = c(0.7, 0.163, 0.107, 0.01, 0.015, 0.004, 0.0005, 0.0005), replace=TRUE)   # determine mix of starting states
-d.c <- d.e <- 0.03               # 3% discount rate for both costs and QALYs
-# v.intn <- c("intervention 1", "intervention 2")    # strategy names
+                     prob = c(0.902, 0.09, 0.0053, 0.0008, 0.001, 0.0009, 0.000, 0.0000), replace=TRUE)   # determine mix of starting states
+d.c <- d.e <- 0.0              # 3% discount rate for both costs and QALYs (0 for biweekly cycles up to a year)
+v.intn <- c("No intervention", "Distribute air filter")    # strategy names
 # add an intervention at a non-0 cycle
 
 birthRate_bl <- (52.4/1000) * cl   # convert into rate for cycle length
-birthRate_change <- -0.035 * cl
+birthRate_change <- 0
+  # -0.035 * cl
 
 allCauseMortality_bl <- (583.1/100000) * cl  
-allCauseMortality_change <- (-2.2/100) * cl
+allCauseMortality_change <- 0
+  # (-2.2/100) * cl
 
 # Individual characteristics
 
 m.x <- data.frame(matrix(nrow=n.i, ncol=0))  # create matrix that will store individual characteristics
 m.x$id <- seq(1,n.i,by=1)          # assign ids
-m.x$age <- floor(rnorm(n.i,48,5))  # determine each individual's age based on a normal dist'n with mean=48 and sd=5
+m.x$age <- floor(rnorm(n.i,48,12))  # determine each individual's age based on a normal dist'n with mean=48 and sd=12
 m.x$sex <- rbinom(n.i,1,0.55)      # determine each individual's sex based on a binomial dist'n with 0=male, 1=female, and p(female)=0.55
-m.x$rural <- rbinom(n.i, 1, 0.30)  # determine each individual's residence based on a binomial dist'n with 0=urban, 1=rural, and p(rural)=0.30
 m.x$exposure <- FALSE              # no previous exposure at the beginning
+m.x$rural <- rbinom(n.i, 1, 0.30)  # determine each individual's residence based on a binomial dist'n with 0=urban, 1=rural, and p(rural)=0.30
+
 
 # assign neighborhood based on rural/urban status
 # Note: this may be a very roundabout way of doing this. Might have made more sense to first give everyone a neighborhood based on neighborhood density
@@ -70,7 +73,6 @@ for (k in 1:nrow(m.x[m.x$rural==0, ])) {
   m.x$neighborhood[m.x$rural==0][k] <-  sample(urbanNeighborhoods,size=1,prob=probsUrban)
 }
 
-# m.x$neighborhood <- as.factor(m.x$neighborhood)
 n.neighborhood <- length(allNeighborhoods)
 
 # Create neighborhood map (the distance in miles between neighborhoods)
@@ -97,6 +99,10 @@ for (k in allNeighborhoods) {
 }
 
 
+# m.x$intervention <-
+#   1  # Universal coverage
+  # rbinom(n.i, 1, 0.5)  # 50% coverage
+  # ifelse(m.x$neighborhood==1111 | m.x$neighborhood==3333, 1, 0)   # Coverage for only selected villages
 
 # Transition probabilities and risk modifiers (stored in a 3-dimensional array with risk factors along the z-axis)
 
@@ -113,6 +119,8 @@ v.costs <- c(0,  # 0
              10000,  # 223
              0, # 50
              0)  # 100
+interventionCost <- 20   # cost per person per cycle
+
 v.utilities <- c(1,  # 0
                  1,  # 1
                  0.9,  # 21
@@ -122,201 +130,64 @@ v.utilities <- c(1,  # 0
                  0, # 50
                  0)  # 100
 
-# c.H <- 0                         # cost of remaining healthy
-# c.Act <- 10000                   # cost of acute injury
-# c.Prm <- 20000                   # cost of permanent injury
-# c.intn <- 5000                   # cost of intervention
-# c.fire <- 15000                  # cost of fire occurring e.g., infrastructure damage, rebuilding homes
-# 
-# u.H <- 1                         # utility when healthy
-# u.Act <- 0.75                    # utility when acutely injured
-# u.Prm <- 0.65                    # utility when permanently injured
-# u.intn <- u.Act                  # utility with intervention (in this case, intervention reduces fire risk and doesn't affect utility)
-# ru.ActPrm <- 0                   # decrease in utility with every additional year being injured (assume same for now)
-
 
 #### 2) Climate Data ####
 
-p.fire <- 0.30                   # probability that a wildfire occurs 
-rr.fire.urban <- 0.25            # risk ratio for fire in urban area versus rural
-rr.fireOverTime <- 1.05          # additional fire risk each consecutive year
+m.fire <- readRDS("fire_data.RDS")
 
-# Get year over year fire data per neighborhood (or another geographic granularity) and air quality data - since no data yet, create matrix
-
-m.fire <- matrix(nrow=n.neighborhood, ncol=n.t, dimnames = list(paste(allNeighborhoods), paste("cycle",1:n.t)))
-m.smoke.duration <- matrix(data = 0, nrow=n.neighborhood, ncol=n.t, dimnames= list(paste(allNeighborhoods), paste("cycle",1:n.t)))
-fireIntensity <- 1
-
-for (t in 1:n.t) {
-  p.fire.tmp <- min(p.fire*rr.fireOverTime^(t-1), 1)                     # calculate fire risk for year t
-  fireIntensity.tmp <- fireIntensity * rr.fireOverTime^(t-1)           # calculate average fire intensity for year t (analogous to fire duration for simplicity)
-  
-  for (k in 1:n.neighborhood) {
-    currentNeighborhood <- allNeighborhoods[k]                           # get neighborhood name
-    m.fire[k, t] <- rbinom(1,size=1,prob=(
-      (currentNeighborhood %in% ruralNeighborhoods)*p.fire.tmp +
-        (currentNeighborhood %in% urbanNeighborhoods)*min(p.fire.tmp*rr.fire.urban,1)))        # calculate whether fire happened given fire risk and urban/rural designation
-    m.smoke.duration[k, t] <- rnorm(1, mean=fireIntensity.tmp, sd = fireIntensity.tmp/2)*m.fire[k, t]    # calculate number of smoky days for neighborhood k in year t due to fire in neighborhood
-    m.smoke.duration[-k ,t] <- m.smoke.duration[-k, t] + m.smoke.duration[k, t]/neighborhood.map[k, -k]  # calculate ADDITIONAL number of smoky days for neighboring communities given fire in and distance to neighborhood k 
-  }
-}
-
-# calculate cumulative smoke exposure days over t years
-# NOTE: this will need to be calculated per individual, because someone born in the last year will only have that year as their exposure
-
-m.smoke.duration.cum <- m.smoke.duration 
-for (t in 1:(n.t-1)) {
-  m.smoke.duration.cum[ , t+1] <- m.smoke.duration.cum[ ,t] + m.smoke.duration[ ,t+1]
-}
+## TESTS ##
+m.fire[,] <- 0
+m.fire[ ,7] <- 1
 
 # create the No Fire matrix
 m.fire.0 <- m.fire
 m.fire.0[m.fire>0] <- 0
 
+
 #### 3) Run Model ####
 
-sim_fire <- MicroSim(initStates, 
-                n.i, n.t, 
-                m.fire, m.smoke.duration.cum, 
-                v.n_asthma, 
-                m.x, 
-                cl, 
-                birthRate_bl, birthRate_change, 
+sim_no_fire <- MicroSim(initStates, 
+                        n.i, n.t, 
+                        m.fire=m.fire.0,
+                        v.n_asthma, 
+                        m.x, 
+                        cl, 
+                        birthRate_bl, birthRate_change, 
+                        allCauseMortality_bl, allCauseMortality_change,
+                        d.c, d.e, 
+                        intervention=FALSE, 
+                        seed = 1,
+                        debug = FALSE)
+
+
+sim_fire_noIntervention <- MicroSim(initStates,
+                n.i, n.t,
+                m.fire=m.fire,
+                v.n_asthma,
+                m.x,
+                cl,
+                birthRate_bl, birthRate_change,
                 allCauseMortality_bl, allCauseMortality_change,
-                d.c, d.e, 
-                TR.out = TRUE, 
-                intn=FALSE, 
+                d.c, d.e,
+                intervention=FALSE,
                 seed = 1,
                 debug = FALSE)
 
-sim_no_fire <- MicroSim(initStates, 
-                     n.i, n.t, 
-                     m.fire=m.fire.0, m.smoke.duration.cum, 
-                     v.n_asthma, 
-                     m.x, 
-                     cl, 
-                     birthRate_bl, birthRate_change, 
-                     allCauseMortality_bl, allCauseMortality_change,
-                     d.c, d.e, 
-                     TR.out = TRUE, 
-                     intn=FALSE, 
-                     seed = 1,
-                     debug = FALSE)
 
+sim_fire_Intervention <- MicroSim(initStates,
+                                    n.i, n.t,
+                                    m.fire=m.fire,
+                                    v.n_asthma,
+                                    m.x,
+                                    cl,
+                                    birthRate_bl, birthRate_change,
+                                    allCauseMortality_bl, allCauseMortality_change,
+                                    d.c, d.e,
+                                    intervention=TRUE,
+                                    seed = 1,
+                                    debug = FALSE)
 
-#### 4) Tables and Figures ####
+# do a version of the graph that is a single fire, one in a dense population, one in smaller neighborhood etc
+# do one highly effective intervention, one less effective 
 
-
-library(ggplot2)
-library(reshape2)
-library(scales)
-library(RColorBrewer)
-library(ggthemes)
-
-
-# in one sim you start with everyone starting at 1. then start with everyone at 0 but with some small risk of developing asthma
-
-############ Cost-effectiveness analysis #############
-# store the mean costs (and the MCSE) of each strategy in a new variable v.C (vector costs)
-v.C  <- c(sim_fire$tc_hat, sim_no_fire$tc_hat) 
-se.C <- c(sd(sim_fire$tc), sd(sim_no_fire$tc)) / sqrt(n.i)
-# store the mean QALYs (and the MCSE) of each strategy in a new variable v.E (vector health outcomes)
-v.E  <- c(sim_fire$te_hat, sim_no_fire$te_hat)
-se.E <- c(sd(sim_fire$te), sd(sim_no_fire$te)) / sqrt(n.i)
-
-delta.C <- v.C[2] - v.C[1]                   # calculate incremental costs
-delta.E <- v.E[2] - v.E[1]                   # calculate incremental QALYs
-# se.delta.E <- sd(sim_no_fire$te - sim_fire$te) / sqrt(n.i) # Monte Carlo squared error (MCSE) of incremental costs
-# se.delta.C <- sd(sim_no_fire$tc - sim_fire$tc) / sqrt(n.i) # Monte Carlo squared error (MCSE) of incremental QALYs
-ICER    <- delta.C / delta.E                 # calculate the ICER
-results <- c(delta.C, delta.E, ICER)         # store the values in a new variable
-
-
-# Create full incremental cost-effectiveness analysis table
-table_micro <- data.frame(
-  c(round(v.C, 0)),           # costs per arm
-  # c(round(se.C, 0), ""),           # MCSE for costs
-  c(round(v.E, 3)),           # health outcomes per arm
-  # c(round(se.E, 3), ""),           # MCSE for health outcomes
-  c("", round(delta.C, 0)),  # incremental costs
-  # c("", round(se.delta.C, 0),""),  # MCSE for incremental costs
-  c("", round(delta.E, 3)),  # incremental QALYs 
-  # c("", round(se.delta.E, 3),""),  # MCSE for health outcomes (QALYs) gained
-  c("", round(ICER, 0))   # ICER
-)
-rownames(table_micro) <- c("fire", "no fire")  # name the rows
-colnames(table_micro) <- c("Costs",   "QALYs", "Incremental Costs", "QALYs Gained", "ICER") # name the columns
-table_micro  # print the table 
-
-
-####### Make figures ######
-theme_set(theme_few())
-mycolors <- brewer.pal(n=8, name="Set3")
-
-trace <- as.data.frame(sim_fire$TR.absolute)
-trace$cycle <- factor(0:n.t)
-trace_long <- melt(data=trace,id.vars="cycle", variable.name="state", value.name="number_of_people")
-
-states <- c('No asthma',
-            'Well-controlled asthma',
-            'Exacerbation - OCS',
-            'Exacerbation - ED visit',
-            'Exacerbation - OCS + ED visit',
-            'Exacerbation - ED visit + hopsitalization',
-            'Death - asthma',
-            'Death - other cause')
-
-fig_trace <- ggplot(trace_long, aes(x=cycle, y=proportion*100, group=state, color=state, linetype=state)) +
-  geom_line(lwd=1) +
-  labs(title = "Health states over time, with fires", x="cycle", y="% of population",
-       color='state', linetype='state') +
-  scale_color_discrete(labels=states)+
-  scale_linetype_discrete(labels=states)
-# +
-#   ylim(0,30)
-# ggsave("wildfire_trace.tiff",fig_trace,units = "in",w=10,h=7)
-
-fig_trace_stacked <- ggplot(trace_long, aes(x = cycle, y = number_of_people, group=state, fill = state, order = dplyr::desc(state))) +
-  geom_area(alpha = .6) +
-  geom_line(position = "stack", size = .2) +
-  labs(title = "Health states over time, with fires", x="cycle", y="Number in state") +
-  scale_fill_manual(values=mycolors, 
-                      labels=states) 
-
-fig_trace_stacked_zoom <-  ggplot(trace_long[trace_long$state!="0", ], aes(x = cycle, y = number_of_people, group=state, fill = state, order = dplyr::desc(state))) +
-  geom_area(alpha = .6) +
-  geom_line(position = "stack", size = .2) +
-  labs(title = "Health states over time", x="cycle", y="Number in state") +
-  scale_fill_manual(values=mycolors[2:8], 
-                    labels=states[2:8]) 
-
-# make this graph not based on proportions but on proportion * number in cohort (including dead people)
-# then also make without fires...
-# Add to the above graph indicators on cycles where a fire happened
-
-fig_trace2 <- ggplot(trace_long, aes(x=cycle, y=proportion*100, group=state)) +
-  geom_line(aes(color=state)) +
-  labs(title = "Health states over time", x="time", y="% of population") +
-  ylim(0, 30)
-
-# larger font, better labels 
-# experiment with different values
-
-mean_costs <- melt(colMeans(sim$m.C, na.rm=TRUE), value.name = "mean_cost") 
-mean_costs$cycle <- factor(0:n.t)
-
-fig_costs <- ggplot(data=mean_costs, aes(x=cycle, y=mean_cost)) +
-  geom_point() +
-  labs(title="Mean cost per person per cycle", x="time",y="mean annual cost ($/year)")
-# ggsave("wildfire_costs.tiff",fig_costs,units = "in",w=10,h=7)
-
-tot_qalys <- melt(colSums(sim$m.E), value.name="tot_qalys")
-tot_qalys$cycle <- factor(0:n.t)
-tot_qalys$cum_qalys_lost <- 100-tot_qalys$tot_qalys
-
-
-fig_qalyslost <- ggplot(data=tot_qalys, aes(x=cycle, y=cum_qalys_lost)) +
-  geom_point() +
-  labs(title="Total QALYs lost per cycle", x="time",y="total QALYs lost")
-# ggsave("wildfire_qalys_lost.tiff",fig_qalyslost,units = "in",w=10,h=7)
 

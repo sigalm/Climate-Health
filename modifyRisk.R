@@ -1,16 +1,24 @@
-modifyRisk <- function(p0,
-                       x1 = FALSE,
-                       rr1 = 1,
-                       x2 = FALSE,
-                       rr2 = 1,
-                       x3 = FALSE,
-                       rr3 = 1) {
+# This function calculates a single "risk modifier" given an individuals risk factors and relevant risk ratios
+
+
+modifyRisk <- function(v.x,       # Vector of binary risk factors (as 1/0 logicals)
+                       v.rr) {    # vector of respective risk ratios
   
-  p1 <- p0 *
-    (x1 * rr1 + (1-x1)) *
-    (x2 * rr2 + (1-x2)) *
-    (x3 * rr3 + (1-x3))
+    # check that same number of risk factors and risk ratios were provided
   
-  return(p1)
+    if (length(v.x) != length(v.rr)) {
+    print("incorrect number of risk ratios given")
+    cat("v.x = ", v.x)
+    cat("v.rr = ", v.rr)
+    stop()
+  }
+  
+  
+  # Calculate and return overall risk modifier by multiplying the two vectors item-wise
+  
+  modifier <- prod((v.x * v.rr + (1-v.x)))
+
+  return(modifier)
   
 }
+
