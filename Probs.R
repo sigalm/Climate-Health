@@ -8,7 +8,7 @@
 Probs <- function(M_it,                      # health state occupied by individual i at cycle t
                   fire_it,                   # fire experience of individual i at cycle t (binary)
                   x_i,                       # individual characteristics of individual i (row i of m.x)
-                  intervention,              # is there an intervention that alters the transition probabilities?
+                  intervention_it,           # is the individual getting the intervention (binary)
                   deathRate_t) {             # death rate at cycle t 
   
   from_state = as.character(M_it)                           # Take the health state occupied by individual i at cycle t
@@ -27,7 +27,7 @@ Probs <- function(M_it,                      # health state occupied by individu
       v.x <- c(x_i$age>=riskmodifiers[from_state, to_state, "age_threshold"],  
                x_i$sex, 
                fire_it, 
-               fire_it*intervention
+               intervention_it
                )
       
       

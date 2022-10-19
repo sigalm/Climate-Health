@@ -7,11 +7,11 @@ MicroSim <- function(initStates,                  # vector of initial health sta
                      cl,                          # cycle length
                      birthRate_bl,                # baseline birthrate
                      birthRate_change,            # annual change in birth rate
-                     allCauseMortality_bl,        # baseline annual all cause mortality
                      allCauseMortality_change,    # annual change in all cause mortality
                      d.c,                         # discount rate for costs
                      d.e,                         # discount rate for utilities
-                     intervention,                # is there an intervention? (scalar with Boolean value, could be vector of Booleans if mix of interventions)
+                     intervention,                # intervention coverage/reach
+                     intervention_trigger,        # the level of exposure that triggers deployment of intervention
                      seed = 1,                    # starting seed number
                      debug = FALSE) {                  
   
@@ -24,21 +24,24 @@ MicroSim <- function(initStates,                  # vector of initial health sta
   v.dwe <- 1 / (1 + d.e) ^ (0:n.t)     # calculate discount weights for QALYs per cycle
   
   v.birthRate <- birthRate_bl * (1+birthRate_change)^(0:n.t)    # calculate birth rates per cycle
-  v.deathRate <- (1+allCauseMortality_change)^(0:n.t+1)         # calculate death rate adjuster per cycle
+  v.deathRate <- (1+allCauseMortality_change)^(0:n.t)         # calculate death rate adjuster per cycle
   
   # initialize matrices to capture fires, health states, costs, and health outcomes each cycle:
   
-  m.M <- m.C <- m.E <- matrix(nrow=n.i, ncol=n.t+1, dimnames = list(paste("ind", 1:n.i), paste("cycle",0:n.t)))  
+  m.M <- m.I <-  m.C <- m.E <- matrix(nrow=n.i, ncol=n.t+1, dimnames = list(paste("ind", 1:n.i), paste("cycle",0:n.t))) 
   
-  m.M[ ,1] <- initStates    
-  m.C[ ,1] <- Costs(M_it=m.M[ ,1], intervention = intervention)
+  m.I[ ,1] <- 0
+  
+  m.M[ ,1] <- initStates 
+  m.C[ ,1] <- Costs(M_it=m.M[ ,1], intervention = m.I[ ,1])
   m.E[ ,1] <- Effs(M_it=m.M[ ,1], x_i=m.x)
+ 
   
   v.totalPop  <- rep(NA, n.t+1)    # vector to track population size over each cycle
   v.totalPop[1] <- n.i
   
   if (debug==TRUE) {
-    tracker <- matrix(nrow=n.i*(n.t), ncol=3+length(v.n_asthma))
+    tracker <- matrix(nrow=n.i*n.t, ncol=3+length(v.n_asthma))
     colnames(tracker) <- c("ind","cycle", "prior M", v.n_asthma)
   }
 
@@ -55,6 +58,23 @@ MicroSim <- function(initStates,                  # vector of initial health sta
       set.seed(seed+i+t)                                                               # set seed for every individual
       neighborhood_index <- match(m.x$neighborhood[i], allNeighborhoods)             # get neighborhood number of individual i
       
+      
+      # determine if individual gets intervention
+      # if a fire happened in their neighborhood, or if the total exposure to nearby fires is above a given threshold, they MAY receive intervention (based on intervention coverage)
+      
+      fire_it <- m.fire[neighborhood_index, t]
+      exposure_it <- sum(m.fire[ ,t]*neighborhood.effect.size[ ,neighborhood_index]) # eventually will need wind direction
+      
+      if (debug==TRUE) {print(exposure_it)}
+      
+      if (intervention>0 & (fire_it==1 | exposure_it>=intervention_trigger)) {
+        m.I[i,t+1] <- sample(1, size=1, prob=intervention)
+      } else {
+        m.I[i,t+1] <- 0
+      }
+      
+
+      
       # calculate the transition probability for individual i at cycle t
       # First use the Probs function to calculate the transition probabilities into each "to" state for individual i,
       #   given their individual characteristics/risk factors and the health state they're coming from
@@ -63,8 +83,8 @@ MicroSim <- function(initStates,                  # vector of initial health sta
       v.p <- Probs(M_it = m.M[i,t], 
                    fire_it = m.fire[neighborhood_index, t], 
                    x_i = m.x[i, ], 
-                   intervention = ifelse(m.fire[neighborhood_index, t]==1, intervention, FALSE),
-                   deathRate_t = v.deathRate[t+1])
+                   intervention_it = m.I[i,t+1],
+                   deathRate_t = v.deathRate[t])
       
       if (debug==TRUE) {
         tracker[i+(n.i*(t-1)), ] <- c(i, t, m.M[i,t], v.p)
@@ -72,7 +92,7 @@ MicroSim <- function(initStates,                  # vector of initial health sta
 
       m.M[i, t+1] <- sample(v.n_asthma, prob=v.p, size=1)                             # sample the next health state given adjusted probabilities
       
-      m.C[i, t+1] <- Costs(M_it=m.M[i, t+1], intervention=intervention)               # estimate costs for individual i at cycle t+1
+      m.C[i, t+1] <- Costs(M_it=m.M[i, t+1], intervention_it=m.I[i,t+1])               # estimate costs for individual i at cycle t+1
       m.E[i, t+1] <- Effs(M_it = m.M[i, t+1], x_i=m.x[i, ])                           # estimate QALYs for individual i at cycle t+1
       
       m.x$age[i] <- m.x$age[i] + cl                                                   # increase age by cycle length
@@ -104,13 +124,14 @@ MicroSim <- function(initStates,                  # vector of initial health sta
             
             # assign a health state, initial costs, and initial QALYs to the newborn
             
-            new_M <-new_C <- new_E <- rep(NA,n.t+1)
+            new_M <- new_I <-new_C <- new_E <- rep(NA,n.t+1)
             new_M[t+1] <- sample(v.n_asthma[1:2], prob=c(0.8, 0.2), size=1)                                                 # Add initial health state of new child to m.M
             m.M <- rbind(m.M, new_M)
             new_C[t+1] <- Costs(M_it=new_M[t+1], intervention = intervention)
             m.C <- rbind(m.C, new_C)
             new_E[t+1] <- Effs(M_it=new_M[t+1], x_i=new_x)
             m.E <- rbind(m.E, new_E)
+            m.I <- rbind(m.I, new_I)
           }
         }  
         totalBirths_t <- totalBirths_t + kids_it        # calculate total number of births in cycle t
@@ -146,7 +167,8 @@ MicroSim <- function(initStates,                  # vector of initial health sta
   # return outputs as a list
   
   results <- list(
-    m.M=m.M, 
+    m.M=m.M,
+    m.I=m.I,
     m.C=m.C,
     m.E=m.E,
     tc=tc,

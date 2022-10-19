@@ -15,7 +15,7 @@ source("multisheet2array.R")
 
 #### 1) Population Inputs #### 
 
-n.i <- 5000                     # number of individuals
+n.i <-2000                   # number of individuals
 n.t <- 52/2                     # time horizon (in cycles)
 cl <- 2/52                      # length of each cycle (in years)
 v.n_asthma <- c("0",   # No asthma 
@@ -29,7 +29,7 @@ v.n_asthma <- c("0",   # No asthma
 )
 
 # add asthma with inhaled therapy?
- 
+
 n.s_asthma <- length(v.n_asthma)               # number of health states
 initStates <- sample(v.n_asthma, size = n.i, 
                      prob = c(0.902, 0.09, 0.0053, 0.0008, 0.001, 0.0009, 0.000, 0.0000), replace=TRUE)   # determine mix of starting states
@@ -39,11 +39,11 @@ v.intn <- c("No intervention", "Distribute air filter")    # strategy names
 
 birthRate_bl <- (52.4/1000) * cl   # convert into rate for cycle length
 birthRate_change <- 0
-  # -0.035 * cl
+# -0.035 * cl
 
 allCauseMortality_bl <- (583.1/100000) * cl  
 allCauseMortality_change <- 0
-  # (-2.2/100) * cl
+# (-2.2/100) * cl
 
 # Individual characteristics
 
@@ -85,6 +85,9 @@ neighborhood.map[3, ] <-  c(1,   1, 0, 8, 10)
 neighborhood.map[4, ] <-  c(3,   6, 8, 0, 3)
 neighborhood.map[5, ] <-  c(5,   4,10, 3, 0)
 
+# Rescale neighborhood map to contain relative effect size of distance to fire. e.g. if fire happened in 1111, the effect size is 1, and decreases as you go farther away
+neighborhood.effect.size <- scales::rescale(1/(neighborhood.map+1))
+
 # set household ID based on neighborhood (household aren't used for now, but will be important for other conditions)
 # mean household size is 4
 
@@ -101,8 +104,8 @@ for (k in allNeighborhoods) {
 
 # m.x$intervention <-
 #   1  # Universal coverage
-  # rbinom(n.i, 1, 0.5)  # 50% coverage
-  # ifelse(m.x$neighborhood==1111 | m.x$neighborhood==3333, 1, 0)   # Coverage for only selected villages
+# rbinom(n.i, 1, 0.5)  # 50% coverage
+# ifelse(m.x$neighborhood==1111 | m.x$neighborhood==3333, 1, 0)   # Coverage for only selected villages
 
 # Transition probabilities and risk modifiers (stored in a 3-dimensional array with risk factors along the z-axis)
 
@@ -133,7 +136,7 @@ v.utilities <- c(1,  # 0
 
 #### 2) Climate Data ####
 
-m.fire <- readRDS("fire_data.RDS")
+m.fire <- readRDS("fire_data_oct10.RDS")
 
 ## TESTS ##
 m.fire[,] <- 0
@@ -153,39 +156,42 @@ sim_no_fire <- MicroSim(initStates,
                         m.x, 
                         cl, 
                         birthRate_bl, birthRate_change, 
-                        allCauseMortality_bl, allCauseMortality_change,
+                        allCauseMortality_change,
                         d.c, d.e, 
-                        intervention=FALSE, 
+                        intervention=0,
+                        intervention_trigger=0,
                         seed = 1,
                         debug = FALSE)
 
 
 sim_fire_noIntervention <- MicroSim(initStates,
-                n.i, n.t,
-                m.fire=m.fire,
-                v.n_asthma,
-                m.x,
-                cl,
-                birthRate_bl, birthRate_change,
-                allCauseMortality_bl, allCauseMortality_change,
-                d.c, d.e,
-                intervention=FALSE,
-                seed = 1,
-                debug = FALSE)
-
-
-sim_fire_Intervention <- MicroSim(initStates,
                                     n.i, n.t,
                                     m.fire=m.fire,
                                     v.n_asthma,
                                     m.x,
                                     cl,
                                     birthRate_bl, birthRate_change,
-                                    allCauseMortality_bl, allCauseMortality_change,
+                                    allCauseMortality_change,
                                     d.c, d.e,
-                                    intervention=TRUE,
+                                    intervention=0,
+                                    intervention_trigger=0,
                                     seed = 1,
                                     debug = FALSE)
+
+
+sim_fire_Intervention <- MicroSim(initStates,
+                                  n.i, n.t,
+                                  m.fire=m.fire,
+                                  v.n_asthma,
+                                  m.x,
+                                  cl,
+                                  birthRate_bl, birthRate_change,
+                                  allCauseMortality_change,
+                                  d.c, d.e,
+                                  intervention=0.5,
+                                  intervention_trigger=0.5,
+                                  seed = 1,
+                                  debug = FALSE)
 
 # do a version of the graph that is a single fire, one in a dense population, one in smaller neighborhood etc
 # do one highly effective intervention, one less effective 
