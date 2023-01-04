@@ -28,15 +28,26 @@ MicroSim <- function(initStates,                  # vector of initial health sta
   
   # initialize matrices to capture fires, health states, costs, and health outcomes each cycle:
   
-  m.M <- m.I <-  m.C <- m.E <- matrix(nrow=n.i, ncol=n.t+1, dimnames = list(paste("ind", 1:n.i), paste("cycle",0:n.t))) 
+  m.M <- m.I <- m.T <-  m.C <- m.E <- matrix(nrow=n.i, ncol=n.t+1, dimnames = list(paste("ind", 1:n.i), paste("cycle",0:n.t))) 
   
-  m.I[ ,1] <- 0
-  
-  m.M[ ,1] <- initStates 
-  m.C[ ,1] <- Costs(M_it=m.M[ ,1], intervention = m.I[ ,1])
-  m.E[ ,1] <- Effs(M_it=m.M[ ,1], x_i=m.x)
+  m.I[ ,1] <- 0                                                    # initial intervention: none
+  m.T[ ,1] <- m.x$asthmaCare                                       # initial asthma management: pulled from individual data
+  m.M[ ,1] <- initStates                                           # initial health states: pulled from data
+  m.C[ ,1] <- Costs(M_it=m.M[ ,1], intervention = m.I[ ,1])        # initial costs: calculated from health state, intervention, and therapy
+  m.E[ ,1] <- Effs(M_it=m.M[ ,1], x_i=m.x)                         # initial QALYs: calculated from health state and individual data
  
+  # initialize treatment tracking table (keep track of how long people have been on current therapy, if it has been successful in the past)
+  temp <- expand.grid(m.x$id, v.therapy)
+  txTracker <- data.frame(id=temp$Var1, tx=temp$Var2, txStart=NA, txEnd=NA, txSuccess=NA, txCount=0)
   
+  
+  # assign start time to each individual for the therapy at initialization
+  
+  for (i in 1:n.i) {
+    tx <-  m.x[i, "asthmaCare"]      # find what therapy they're on
+    txTracker[txTracker$id==i & txTracker$tx==tx, ]$txStart <- 0  # note start time 0 for that individual-treatment row
+  }  
+
   v.totalPop  <- rep(NA, n.t+1)    # vector to track population size over each cycle
   v.totalPop[1] <- n.i
   
@@ -53,10 +64,11 @@ MicroSim <- function(initStates,                  # vector of initial health sta
     
     for (i in 1:n.i) {
       
-      if (debug==TRUE) {cat("### Individual =", i, "\n")}
+      if (debug==TRUE) {cat("### Individual =", i, "\n",
+                            "age of 201", m.x[201,"age"], class(m.x[201,"age"]),"\n")}
       
-      set.seed(seed+i+t)                                                               # set seed for every individual
-      neighborhood_index <- match(m.x$neighborhood[i], allNeighborhoods)             # get neighborhood number of individual i
+      set.seed(seed+i*79+t*71)                                                     # set seed for every individual
+      neighborhood_index <- match(m.x$neighborhood[i], allNeighborhoods)    # get neighborhood number of individual i
       
       
       # determine if individual gets intervention
@@ -67,8 +79,9 @@ MicroSim <- function(initStates,                  # vector of initial health sta
       
       if (debug==TRUE) {print(exposure_it)}
       
+      set.seed(seed+i*79+t*71) 
       if (intervention>0 & (fire_it==1 | exposure_it>=intervention_trigger)) {
-        m.I[i,t+1] <- sample(1, size=1, prob=intervention)
+        m.I[i,t+1] <- rbinom(n=1, size=1, prob=intervention)
       } else {
         m.I[i,t+1] <- 0
       }
@@ -80,17 +93,46 @@ MicroSim <- function(initStates,                  # vector of initial health sta
       #   given their individual characteristics/risk factors and the health state they're coming from
       # Then sample the new health state using those probabilities.
       
+      
       v.p <- Probs(M_it = m.M[i,t], 
-                   fire_it = m.fire[neighborhood_index, t], 
+                   fire_it = fire_it, 
                    x_i = m.x[i, ], 
-                   intervention_it = m.I[i,t+1],
-                   deathRate_t = v.deathRate[t])
+                   intervention_it = m.I[i,t],
+                   deathRate_t = v.deathRate[t],
+                   debug=debug)
+      
       
       if (debug==TRUE) {
+        cat(v.p, "\n", "cycle=", t, "\n")
         tracker[i+(n.i*(t-1)), ] <- c(i, t, m.M[i,t], v.p)
       }
-
+      set.seed(seed+i*79+t*71) 
       m.M[i, t+1] <- sample(v.n_asthma, prob=v.p, size=1)                             # sample the next health state given adjusted probabilities
+      
+      
+      # Determine new therapy if therapy changed
+      set.seed(seed+i*79+t*71) 
+      
+      worseControl <- as.integer(m.M[i,t+1])>as.integer(m.M[i, t])                              # assess if asthma control status got worse
+      lastDrVisit <-  (t+1) - txTracker$txStart[txTracker$id==i & txTracker$tx==m.T[i,t]]       # assess time since current therapy began
+      # print(worseControl)
+      # print(m.T[i,t])
+      # print(lastDrVisit)
+      
+      if (worseControl | lastDrVisit>2) {   # if you have poorer control of if you're due for a doctor's visit, you will be reevaluated for changing therapies
+        m.T[i, t+1] <- sample(v.therapy, size=1, prob=therapyMatrix[m.M[i,t+1], ])             # determine therapy for next cycle (given prob of each therapy based on new health state)
+        txTracker$txEnd[txTracker$id==i & txTracker$tx==m.T[i,t]] <- t                         # note tx end date for previous tx
+        txTracker$txStart[txTracker$id==i & txTracker$tx==m.T[i,t+1]] <- t                     # note tx start date for new tx
+        txTracker$txCount[txTracker$id==i & txTracker$tx==m.T[i,t]] <- txTracker$txCount[txTracker$id==i & txTracker$tx==m.T[i,t]] + 1  # update lifetime count of that therapy
+        
+        if (as.integer(m.M[i,t+1])==as.integer(m.M[i, t]) | worseControl) {  # assess whether therapy was successful. if no change in control or poorer control, therapy NOT successful. To be discussed.
+          txTracker$txSuccess[txTracker$id==i & txTracker$tx==m.T[i,t]] <- 0
+        } else {
+          txTracker$txSuccess[txTracker$id==i & txTracker$tx==m.T[i,t]] <- 1
+        }
+      } else {                                                               # otherwise keep using the same therapy
+        m.T[i, t+1] <- m.T[i,t]
+      }
       
       m.C[i, t+1] <- Costs(M_it=m.M[i, t+1], intervention_it=m.I[i,t+1])               # estimate costs for individual i at cycle t+1
       m.E[i, t+1] <- Effs(M_it = m.M[i, t+1], x_i=m.x[i, ])                           # estimate QALYs for individual i at cycle t+1
@@ -106,17 +148,20 @@ MicroSim <- function(initStates,                  # vector of initial health sta
       # if individual is not Dead, determine # of kids born in year t
       
       if (m.M[i,t+1] != "50" & m.M[i, t+1] != "100") {
+        set.seed(seed+i*79+t*71) 
         kids_it <- rpois(1, v.birthRate[t])           # determine if individual i had children and how many using a Poisson distribution with probability being the birth rate at time t
         
         # if individual i had children, assign characteristics to child and add new row to m.x
         
         if (kids_it > 0) {
+          cat("I have",kids_it,"baby(ies)klklnknkllk)!", i,"\n")
           for (kid in 1:kids_it) {
             new_x <- c(m.x[nrow(m.x), 'id'] + 1,                              # get last ID in population and add 1
                        0,                                                     # age is 0
                        rbinom(1,1,0.55),                                      # sex (0=male, 1=female) based on binomial distribution with p=0.55 for female
-                       m.x$rural[i],                                          # same rural/urban designation as parent
                        ifelse(m.fire[neighborhood_index, t]==1, TRUE, FALSE), # exposure is TRUE if fire happened that year
+                       m.x$rural[i],                                          # same rural/urban designation as parent
+                       "NoTx",                                                # define asthma care (none because no asthma at birth)
                        m.x$neighborhood[i],                                   # same neighborhood as parent
                        m.x$fam_id[i])                                         # same family as parent
             m.x <- rbind(m.x, new_x)           # add the above as new row to m.x, matrix of individuals and risk factors
@@ -124,21 +169,21 @@ MicroSim <- function(initStates,                  # vector of initial health sta
             
             # assign a health state, initial costs, and initial QALYs to the newborn
             
-            new_M <- new_I <-new_C <- new_E <- rep(NA,n.t+1)
-            new_M[t+1] <- sample(v.n_asthma[1:2], prob=c(0.8, 0.2), size=1)                                                 # Add initial health state of new child to m.M
+            new_M <- new_I <- new_T <-new_C <- new_E <- rep(NA,n.t+1)
+            new_M[t+1] <- 0                                                 # Add initial health state of new child to m.M (age of onset is 5, so no asthma when born)
             m.M <- rbind(m.M, new_M)
             new_C[t+1] <- Costs(M_it=new_M[t+1], intervention = intervention)
             m.C <- rbind(m.C, new_C)
             new_E[t+1] <- Effs(M_it=new_M[t+1], x_i=new_x)
             m.E <- rbind(m.E, new_E)
             m.I <- rbind(m.I, new_I)
+            m.T <- rbind(m.T, new_T) 
           }
         }  
         totalBirths_t <- totalBirths_t + kids_it        # calculate total number of births in cycle t
         
         
       }
-      
       
     }  # close loop for individuals
     
@@ -169,6 +214,7 @@ MicroSim <- function(initStates,                  # vector of initial health sta
   results <- list(
     m.M=m.M,
     m.I=m.I,
+    m.T=m.T,
     m.C=m.C,
     m.E=m.E,
     tc=tc,
@@ -178,6 +224,7 @@ MicroSim <- function(initStates,                  # vector of initial health sta
     m.x=m.x, 
     TR.absolute=TR.absolute,
     TR.proportion=TR.proportion, 
+    txTracker=txTracker,
     if (debug==TRUE) {tracker=tracker}
     )
   
