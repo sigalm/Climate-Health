@@ -1,0 +1,18 @@
+==== LOGIN ====
+ssh smaya@log1.wynton.ucsf.edu
+smaya@log1.wynton.ucsf.edu's password:
+
+==== WORK WITH RSTUDIO WEB ====
+ssh dev2
+module load CBI rstudio-server-controller
+rsc start
+
+## open a new terminal
+ssh -L 22314:dev2.wynton.ucsf.edu:22314 smaya@log1.wynton.ucsf.edu  ##update with actual port number
+
+
+==== SUBMIT JOB ====
+cd Modeling/
+chmod ugo+x charm_speed_test.sh
+qsub -cwd -j yes charm_speed_test.sh
+qstat # to check status

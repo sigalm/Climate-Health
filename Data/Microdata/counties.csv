@@ -1,0 +1,59 @@
+FIPS,County,Designation
+001,Alameda,urban
+003,Alpine,rural
+005,Amador,rural
+007,Butte,suburban
+009,Calaveras,rural
+011,Colusa,rural
+013,Contra Costa,urban
+015,Del Norte,rural
+017,El Dorado,rural
+019,Fresno,urban
+021,Glenn,rural
+023,Humboldt,rural
+025,Imperial,suburban
+027,Inyo,rural
+029,Kern,suburban
+031,Kings,rural
+033,Lake,rural
+035,Lassen,rural
+037,Los Angeles,urban
+039,Madera,rural
+041,Marin,suburban
+043,Mariposa,rural
+045,Mendocino,rural
+047,Merced,suburban
+049,Modoc,rural
+051,Mono,rural
+053,Monterey,suburban
+055,Napa,suburban
+057,Nevada,rural
+059,Orange,urban
+061,Placer,suburban
+063,Plumas,rural
+065,Riverside,urban
+067,Sacramento,urban
+069,San Benito,rural
+071,San Bernardino,urban
+073,San Diego,urban
+075,San Francisco,urban
+077,San Joaquin,urban
+079,San Luis Obispo,suburban
+081,San Mateo,urban
+083,Santa Barbara,suburban
+085,Santa Clara,urban
+087,Santa Cruz,suburban
+089,Shasta,suburban
+091,Sierra,rural
+093,Siskiyou,rural
+095,Solano,suburban
+097,Sonoma,suburban
+099,Stanislaus,suburban
+101,Sutter,rural
+103,Tehama,rural
+105,Trinity,rural
+107,Tulare,suburban
+109,Tuolumne,rural
+111,Ventura,urban
+113,Yolo,suburban
+115,Yuba,rural

@@ -1,0 +1,25 @@
+sex,age_group, probability 
+male,0,0.029
+male,5,0.031
+male,10,0.035
+male,15,0.02
+male,18,0.046
+male,25,0.076
+male,35,0.071
+male,45,0.063
+male,55,0.06
+male,65,0.043
+male,75,0.019
+male,85,0.007
+female,0,0.028
+female,5,0.029
+female,10,0.033
+female,15,0.019
+female,18,0.044
+female,25,0.072
+female,35,0.067
+female,45,0.062
+female,55,0.061
+female,65,0.048
+female,75,0.025
+female,85,0.011

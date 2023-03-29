@@ -12,10 +12,10 @@ library(gridExtra)
 
 ####### Make figures ######
 theme_set(theme_few())
-mycolors <- brewer.pal(n=n.s_asthma, name="Set3")
+mycolors <- brewer.pal(n=n_asthma_states, name="Set3")
 
-trace_no_fire <- as.data.frame(sim_no_fire$TR.absolute)
-trace_no_fire$cycle <- factor(0:n.t)
+trace_no_fire <- as.data.frame(sim_no_fire$TR_absolute)
+trace_no_fire$cycle <- factor(0:n_t)
 trace_no_fire_long <- melt(data=trace_no_fire,id.vars="cycle", variable.name="state", value.name="number_of_people")
 
 trace_fire_noIntervention <- as.data.frame(sim_fire_noIntervention$TR.absolute)
@@ -69,13 +69,14 @@ fig_no_fire <- ggplot(trace_no_fire_long, aes(x = cycle, y = number_of_people, g
   labs(title = "Health states over time, no fires", x="cycle", y="Number in state") +
   scale_fill_manual(values=mycolors, labels=states) 
 
+
 fig_no_fire_zoom <- ggplot(trace_no_fire_long[trace_no_fire_long$state!="0", ], aes(x = cycle, y = number_of_people, group=state, fill = state, order = dplyr::desc(state))) +
   geom_area(alpha = .6) +
   geom_line(position = "stack", size = .2) +
   labs(title = "Health states over time, no fires", x="cycle", y="Number in state") +
   scale_fill_manual(values=mycolors[-1], labels=states[-1]) +
   theme(legend.text= element_text(size=20))
-
+fig_no_fire_zoom
 
 
 fig_fire_noIntervention <- ggplot(trace_fire_noIntervention_long, aes(x = cycle, y = number_of_people, group=state, fill = state, order = dplyr::desc(state))) +

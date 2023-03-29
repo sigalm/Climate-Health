@@ -1,10 +1,12 @@
-Costs <- function(M_it,                     # M_it: health state occupied by individual i at cycle t
-                  intervention_it) {        # intervention: is this person receiving intervention (binary)
-  
-  
-  c_it <- v.costs[match(M_it, v.n_asthma)] + (intervention_it * interventionCost)
 
+Costs <- function(v_asthma_costs, 
+                  M_it, 
+                  v_asthma_state_names, 
+                  intervention_it, 
+                  v_intervention_costs) {
   
-
-  return(c_it)                                          # return the costs
-}
+  cost_it <- v_asthma_costs[match(M_it, v_asthma_state_names)] + (intervention_it * v_intervention_costs)
+  
+  return(cost_it) 
+  
+}                     

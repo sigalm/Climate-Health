@@ -1,0 +1,4 @@
+[2023-03-28 12:15:39] ...INITIALIZING...
+[2023-03-28 12:15:39] Starting simulation.
+[2023-03-28 12:15:39] Simulation complete. Preparing results.
+[2023-03-28 12:15:39] Results saved. Total run time: 0.1 seconds

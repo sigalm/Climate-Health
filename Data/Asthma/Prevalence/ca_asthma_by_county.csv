@@ -1,0 +1,291 @@
+County,Year,Asthma_measure,Comparison,Group,County_prevalence,California_prevalence
+Alameda,2019–2020,Current asthma prevalence,Total population,All,0.075,0.087
+Alpine,2019–2020,Current asthma prevalence,Total population,All,0.069,0.087
+Amador,2019–2020,Current asthma prevalence,Total population,All,0.069,0.087
+Butte,2019–2020,Current asthma prevalence,Total population,All,0.133,0.087
+Calaveras,2019–2020,Current asthma prevalence,Total population,All,0.069,0.087
+Colusa,2019–2020,Current asthma prevalence,Total population,All,0.115,0.087
+Contra Costa,2019–2020,Current asthma prevalence,Total population,All,0.087,0.087
+Del Norte,2019–2020,Current asthma prevalence,Total population,All,0.08,0.087
+El Dorado,2019–2020,Current asthma prevalence,Total population,All,0.088,0.087
+Fresno,2019–2020,Current asthma prevalence,Total population,All,0.128,0.087
+Glenn,2019–2020,Current asthma prevalence,Total population,All,0.115,0.087
+Humboldt,2019–2020,Current asthma prevalence,Total population,All,0.103,0.087
+Imperial,2019–2020,Current asthma prevalence,Total population,All,0.106,0.087
+Inyo,2019–2020,Current asthma prevalence,Total population,All,0.069,0.087
+Kern,2019–2020,Current asthma prevalence,Total population,All,0.09,0.087
+Kings,2019–2020,Current asthma prevalence,Total population,All,0.128,0.087
+Lake,2019–2020,Current asthma prevalence,Total population,All,0.117,0.087
+Lassen,2019–2020,Current asthma prevalence,Total population,All,0.08,0.087
+Los Angeles,2019–2020,Current asthma prevalence,Total population,All,0.087,0.087
+Madera,2019–2020,Current asthma prevalence,Total population,All,0.137,0.087
+Marin,2019–2020,Current asthma prevalence,Total population,All,0.107,0.087
+Mariposa,2019–2020,Current asthma prevalence,Total population,All,0.069,0.087
+Mendocino,2019–2020,Current asthma prevalence,Total population,All,0.098,0.087
+Merced,2019–2020,Current asthma prevalence,Total population,All,0.147,0.087
+Modoc,2019–2020,Current asthma prevalence,Total population,All,0.08,0.087
+Mono,2019–2020,Current asthma prevalence,Total population,All,0.069,0.087
+Monterey,2019–2020,Current asthma prevalence,Total population,All,0.083,0.087
+Napa,2019–2020,Current asthma prevalence,Total population,All,0.141,0.087
+Nevada,2019–2020,Current asthma prevalence,Total population,All,0.06,0.087
+Orange,2019–2020,Current asthma prevalence,Total population,All,0.079,0.087
+Placer,2019–2020,Current asthma prevalence,Total population,All,0.1,0.087
+Plumas,2019–2020,Current asthma prevalence,Total population,All,0.08,0.087
+Riverside,2019–2020,Current asthma prevalence,Total population,All,0.073,0.087
+Sacramento,2019–2020,Current asthma prevalence,Total population,All,0.099,0.087
+San Benito,2019–2020,Current asthma prevalence,Total population,All,0.109,0.087
+San Bernardino,2019–2020,Current asthma prevalence,Total population,All,0.067,0.087
+San Diego,2019–2020,Current asthma prevalence,Total population,All,0.072,0.087
+San Francisco,2019–2020,Current asthma prevalence,Total population,All,0.081,0.087
+San Joaquin,2019–2020,Current asthma prevalence,Total population,All,0.092,0.087
+San Luis Obispo,2019–2020,Current asthma prevalence,Total population,All,0.057,0.087
+San Mateo,2019–2020,Current asthma prevalence,Total population,All,0.11,0.087
+Santa Barbara,2019–2020,Current asthma prevalence,Total population,All,0.043,0.087
+Santa Clara,2019–2020,Current asthma prevalence,Total population,All,0.075,0.087
+Santa Cruz,2019–2020,Current asthma prevalence,Total population,All,0.074,0.087
+Shasta,2019–2020,Current asthma prevalence,Total population,All,0.144,0.087
+Sierra,2019–2020,Current asthma prevalence,Total population,All,0.08,0.087
+Siskiyou,2019–2020,Current asthma prevalence,Total population,All,0.08,0.087
+Solano,2019–2020,Current asthma prevalence,Total population,All,0.148,0.087
+Sonoma,2019–2020,Current asthma prevalence,Total population,All,0.119,0.087
+Stanislaus,2019–2020,Current asthma prevalence,Total population,All,0.109,0.087
+Sutter,2019–2020,Current asthma prevalence,Total population,All,0.09,0.087
+Tehama,2019–2020,Current asthma prevalence,Total population,All,0.115,0.087
+Trinity,2019–2020,Current asthma prevalence,Total population,All,0.08,0.087
+Tulare,2019–2020,Current asthma prevalence,Total population,All,0.155,0.087
+Tuolumne,2019–2020,Current asthma prevalence,Total population,All,0.069,0.087
+Ventura,2019–2020,Current asthma prevalence,Total population,All,0.07,0.087
+Yolo,2019–2020,Current asthma prevalence,Total population,All,0.155,0.087
+Yuba,2019–2020,Current asthma prevalence,Total population,All,0.114,0.087
+Alameda,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Alpine,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Amador,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Butte,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Calaveras,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Colusa,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Contra Costa,2019–2020,Current asthma prevalence,Age group,0-4,0.047,0.033
+Del Norte,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+El Dorado,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Fresno,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Glenn,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Humboldt,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Imperial,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Inyo,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Kern,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Kings,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Lake,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Lassen,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Los Angeles,2019–2020,Current asthma prevalence,Age group,0-4,0.056,0.033
+Madera,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Marin,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Mariposa,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Mendocino,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Merced,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Modoc,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Mono,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Monterey,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Napa,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Nevada,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Orange,2019–2020,Current asthma prevalence,Age group,0-4,0.025,0.033
+Placer,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Plumas,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Riverside,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Sacramento,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+San Benito,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+San Bernardino,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+San Diego,2019–2020,Current asthma prevalence,Age group,0-4,0.018,0.033
+San Francisco,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+San Joaquin,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+San Luis Obispo,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+San Mateo,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Santa Barbara,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Santa Clara,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Santa Cruz,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Shasta,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Sierra,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Siskiyou,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Solano,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Sonoma,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Stanislaus,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Sutter,2019–2020,Current asthma prevalence,Age group,0-4,0.003,0.033
+Tehama,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Trinity,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Tulare,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Tuolumne,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Ventura,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Yolo,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Yuba,2019–2020,Current asthma prevalence,Age group,0-4, Not available ,0.033
+Alameda,2019–2020,Current asthma prevalence,Age group,5-17,0.074,0.089
+Alpine,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Amador,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Butte,2019–2020,Current asthma prevalence,Age group,5-17,0.334,0.089
+Calaveras,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Colusa,2019–2020,Current asthma prevalence,Age group,5-17,0.15,0.089
+Contra Costa,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Del Norte,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+El Dorado,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Fresno,2019–2020,Current asthma prevalence,Age group,5-17,0.118,0.089
+Glenn,2019–2020,Current asthma prevalence,Age group,5-17,0.15,0.089
+Humboldt,2019–2020,Current asthma prevalence,Age group,5-17,0.124,0.089
+Imperial,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Inyo,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Kern,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Kings,2019–2020,Current asthma prevalence,Age group,5-17,0.187,0.089
+Lake,2019–2020,Current asthma prevalence,Age group,5-17,0.144,0.089
+Lassen,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Los Angeles,2019–2020,Current asthma prevalence,Age group,5-17,0.093,0.089
+Madera,2019–2020,Current asthma prevalence,Age group,5-17,0.167,0.089
+Marin,2019–2020,Current asthma prevalence,Age group,5-17,0.135,0.089
+Mariposa,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Mendocino,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Merced,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Modoc,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Mono,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Monterey,2019–2020,Current asthma prevalence,Age group,5-17,0.065,0.089
+Napa,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Nevada,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Orange,2019–2020,Current asthma prevalence,Age group,5-17,0.102,0.089
+Placer,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Plumas,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Riverside,2019–2020,Current asthma prevalence,Age group,5-17,0.077,0.089
+Sacramento,2019–2020,Current asthma prevalence,Age group,5-17,0.103,0.089
+San Benito,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+San Bernardino,2019–2020,Current asthma prevalence,Age group,5-17,0.079,0.089
+San Diego,2019–2020,Current asthma prevalence,Age group,5-17,0.079,0.089
+San Francisco,2019–2020,Current asthma prevalence,Age group,5-17,0.133,0.089
+San Joaquin,2019–2020,Current asthma prevalence,Age group,5-17,0.117,0.089
+San Luis Obispo,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+San Mateo,2019–2020,Current asthma prevalence,Age group,5-17,0.12,0.089
+Santa Barbara,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Santa Clara,2019–2020,Current asthma prevalence,Age group,5-17,0.076,0.089
+Santa Cruz,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Shasta,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Sierra,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Siskiyou,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Solano,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Sonoma,2019–2020,Current asthma prevalence,Age group,5-17,0.067,0.089
+Stanislaus,2019–2020,Current asthma prevalence,Age group,5-17,0.167,0.089
+Sutter,2019–2020,Current asthma prevalence,Age group,5-17,0.056,0.089
+Tehama,2019–2020,Current asthma prevalence,Age group,5-17,0.15,0.089
+Trinity,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Tulare,2019–2020,Current asthma prevalence,Age group,5-17,0.143,0.089
+Tuolumne,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Ventura,2019–2020,Current asthma prevalence,Age group,5-17,0.065,0.089
+Yolo,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Yuba,2019–2020,Current asthma prevalence,Age group,5-17, Not available ,0.089
+Alameda,2019–2020,Current asthma prevalence,Age group,18-64,0.071,0.09
+Alpine,2019–2020,Current asthma prevalence,Age group,18-64,0.073,0.09
+Amador,2019–2020,Current asthma prevalence,Age group,18-64,0.073,0.09
+Butte,2019–2020,Current asthma prevalence,Age group,18-64,0.097,0.09
+Calaveras,2019–2020,Current asthma prevalence,Age group,18-64,0.073,0.09
+Colusa,2019–2020,Current asthma prevalence,Age group,18-64,0.126,0.09
+Contra Costa,2019–2020,Current asthma prevalence,Age group,18-64,0.101,0.09
+Del Norte,2019–2020,Current asthma prevalence,Age group,18-64,0.109,0.09
+El Dorado,2019–2020,Current asthma prevalence,Age group,18-64,0.099,0.09
+Fresno,2019–2020,Current asthma prevalence,Age group,18-64,0.133,0.09
+Glenn,2019–2020,Current asthma prevalence,Age group,18-64,0.126,0.09
+Humboldt,2019–2020,Current asthma prevalence,Age group,18-64,0.11,0.09
+Imperial,2019–2020,Current asthma prevalence,Age group,18-64,0.115,0.09
+Inyo,2019–2020,Current asthma prevalence,Age group,18-64,0.073,0.09
+Kern,2019–2020,Current asthma prevalence,Age group,18-64,0.123,0.09
+Kings,2019–2020,Current asthma prevalence,Age group,18-64,0.103,0.09
+Lake,2019–2020,Current asthma prevalence,Age group,18-64,0.154,0.09
+Lassen,2019–2020,Current asthma prevalence,Age group,18-64,0.109,0.09
+Los Angeles,2019–2020,Current asthma prevalence,Age group,18-64,0.089,0.09
+Madera,2019–2020,Current asthma prevalence,Age group,18-64,0.137,0.09
+Marin,2019–2020,Current asthma prevalence,Age group,18-64,0.099,0.09
+Mariposa,2019–2020,Current asthma prevalence,Age group,18-64,0.073,0.09
+Mendocino,2019–2020,Current asthma prevalence,Age group,18-64,0.145,0.09
+Merced,2019–2020,Current asthma prevalence,Age group,18-64,0.177,0.09
+Modoc,2019–2020,Current asthma prevalence,Age group,18-64,0.109,0.09
+Mono,2019–2020,Current asthma prevalence,Age group,18-64,0.073,0.09
+Monterey,2019–2020,Current asthma prevalence,Age group,18-64,0.084,0.09
+Napa,2019–2020,Current asthma prevalence,Age group,18-64,0.09,0.09
+Nevada,2019–2020,Current asthma prevalence,Age group,18-64,0.057,0.09
+Orange,2019–2020,Current asthma prevalence,Age group,18-64,0.082,0.09
+Placer,2019–2020,Current asthma prevalence,Age group,18-64,0.137,0.09
+Plumas,2019–2020,Current asthma prevalence,Age group,18-64,0.109,0.09
+Riverside,2019–2020,Current asthma prevalence,Age group,18-64,0.074,0.09
+Sacramento,2019–2020,Current asthma prevalence,Age group,18-64,0.103,0.09
+San Benito,2019–2020,Current asthma prevalence,Age group,18-64,0.112,0.09
+San Bernardino,2019–2020,Current asthma prevalence,Age group,18-64,0.07,0.09
+San Diego,2019–2020,Current asthma prevalence,Age group,18-64,0.077,0.09
+San Francisco,2019–2020,Current asthma prevalence,Age group,18-64,0.073,0.09
+San Joaquin,2019–2020,Current asthma prevalence,Age group,18-64,0.085,0.09
+San Luis Obispo,2019–2020,Current asthma prevalence,Age group,18-64,0.065,0.09
+San Mateo,2019–2020,Current asthma prevalence,Age group,18-64,0.125,0.09
+Santa Barbara,2019–2020,Current asthma prevalence,Age group,18-64,0.049,0.09
+Santa Clara,2019–2020,Current asthma prevalence,Age group,18-64,0.068,0.09
+Santa Cruz,2019–2020,Current asthma prevalence,Age group,18-64,0.098,0.09
+Shasta,2019–2020,Current asthma prevalence,Age group,18-64,0.151,0.09
+Sierra,2019–2020,Current asthma prevalence,Age group,18-64,0.109,0.09
+Siskiyou,2019–2020,Current asthma prevalence,Age group,18-64,0.109,0.09
+Solano,2019–2020,Current asthma prevalence,Age group,18-64,0.176,0.09
+Sonoma,2019–2020,Current asthma prevalence,Age group,18-64,0.131,0.09
+Stanislaus,2019–2020,Current asthma prevalence,Age group,18-64,0.099,0.09
+Sutter,2019–2020,Current asthma prevalence,Age group,18-64,0.108,0.09
+Tehama,2019–2020,Current asthma prevalence,Age group,18-64,0.126,0.09
+Trinity,2019–2020,Current asthma prevalence,Age group,18-64,0.109,0.09
+Tulare,2019–2020,Current asthma prevalence,Age group,18-64,0.184,0.09
+Tuolumne,2019–2020,Current asthma prevalence,Age group,18-64,0.073,0.09
+Ventura,2019–2020,Current asthma prevalence,Age group,18-64,0.07,0.09
+Yolo,2019–2020,Current asthma prevalence,Age group,18-64,0.188,0.09
+Yuba,2019–2020,Current asthma prevalence,Age group,18-64,0.122,0.09
+Alameda,2019–2020,Current asthma prevalence,Age group,65+,0.11,0.092
+Alpine,2019–2020,Current asthma prevalence,Age group,65+,0.103,0.092
+Amador,2019–2020,Current asthma prevalence,Age group,65+,0.103,0.092
+Butte,2019–2020,Current asthma prevalence,Age group,65+,0.088,0.092
+Calaveras,2019–2020,Current asthma prevalence,Age group,65+,0.103,0.092
+Colusa,2019–2020,Current asthma prevalence,Age group,65+,0.094,0.092
+Contra Costa,2019–2020,Current asthma prevalence,Age group,65+,0.096,0.092
+Del Norte,2019–2020,Current asthma prevalence,Age group,65+,0.073,0.092
+El Dorado,2019–2020,Current asthma prevalence,Age group,65+,0.089,0.092
+Fresno,2019–2020,Current asthma prevalence,Age group,65+,0.152,0.092
+Glenn,2019–2020,Current asthma prevalence,Age group,65+,0.094,0.092
+Humboldt,2019–2020,Current asthma prevalence,Age group,65+,0.084,0.092
+Imperial,2019–2020,Current asthma prevalence,Age group,65+,0.135,0.092
+Inyo,2019–2020,Current asthma prevalence,Age group,65+,0.103,0.092
+Kern,2019–2020,Current asthma prevalence,Age group,65+,0.076,0.092
+Kings,2019–2020,Current asthma prevalence,Age group,65+,0.214,0.092
+Lake,2019–2020,Current asthma prevalence,Age group,65+,0.073,0.092
+Lassen,2019–2020,Current asthma prevalence,Age group,65+,0.073,0.092
+Los Angeles,2019–2020,Current asthma prevalence,Age group,65+,0.084,0.092
+Madera,2019–2020,Current asthma prevalence,Age group,65+,0.162,0.092
+Marin,2019–2020,Current asthma prevalence,Age group,65+,0.12,0.092
+Mariposa,2019–2020,Current asthma prevalence,Age group,65+,0.103,0.092
+Mendocino,2019–2020,Current asthma prevalence,Age group,65+,0.054,0.092
+Merced,2019–2020,Current asthma prevalence,Age group,65+,0.102,0.092
+Modoc,2019–2020,Current asthma prevalence,Age group,65+,0.073,0.092
+Mono,2019–2020,Current asthma prevalence,Age group,65+,0.103,0.092
+Monterey,2019–2020,Current asthma prevalence,Age group,65+,0.129,0.092
+Napa,2019–2020,Current asthma prevalence,Age group,65+,0.144,0.092
+Nevada,2019–2020,Current asthma prevalence,Age group,65+,0.114,0.092
+Orange,2019–2020,Current asthma prevalence,Age group,65+,0.06,0.092
+Placer,2019–2020,Current asthma prevalence,Age group,65+,0.047,0.092
+Plumas,2019–2020,Current asthma prevalence,Age group,65+,0.073,0.092
+Riverside,2019–2020,Current asthma prevalence,Age group,65+,0.076,0.092
+Sacramento,2019–2020,Current asthma prevalence,Age group,65+,0.116,0.092
+San Benito,2019–2020,Current asthma prevalence,Age group,65+,0.097,0.092
+San Bernardino,2019–2020,Current asthma prevalence,Age group,65+,0.081,0.092
+San Diego,2019–2020,Current asthma prevalence,Age group,65+,0.072,0.092
+San Francisco,2019–2020,Current asthma prevalence,Age group,65+,0.109,0.092
+San Joaquin,2019–2020,Current asthma prevalence,Age group,65+,0.098,0.092
+San Luis Obispo,2019–2020,Current asthma prevalence,Age group,65+,0.097,0.092
+San Mateo,2019–2020,Current asthma prevalence,Age group,65+,0.082,0.092
+Santa Barbara,2019–2020,Current asthma prevalence,Age group,65+,0.064,0.092
+Santa Clara,2019–2020,Current asthma prevalence,Age group,65+,0.127,0.092
+Santa Cruz,2019–2020,Current asthma prevalence,Age group,65+,0.044,0.092
+Shasta,2019–2020,Current asthma prevalence,Age group,65+,0.075,0.092
+Sierra,2019–2020,Current asthma prevalence,Age group,65+,0.073,0.092
+Siskiyou,2019–2020,Current asthma prevalence,Age group,65+,0.073,0.092
+Solano,2019–2020,Current asthma prevalence,Age group,65+,0.238,0.092
+Sonoma,2019–2020,Current asthma prevalence,Age group,65+,0.133,0.092
+Stanislaus,2019–2020,Current asthma prevalence,Age group,65+,0.079,0.092
+Sutter,2019–2020,Current asthma prevalence,Age group,65+,0.096,0.092
+Tehama,2019–2020,Current asthma prevalence,Age group,65+,0.094,0.092
+Trinity,2019–2020,Current asthma prevalence,Age group,65+,0.073,0.092
+Tulare,2019–2020,Current asthma prevalence,Age group,65+,0.133,0.092
+Tuolumne,2019–2020,Current asthma prevalence,Age group,65+,0.103,0.092
+Ventura,2019–2020,Current asthma prevalence,Age group,65+,0.075,0.092
+Yolo,2019–2020,Current asthma prevalence,Age group,65+,0.14,0.092
+Yuba,2019–2020,Current asthma prevalence,Age group,65+,0.144,0.092

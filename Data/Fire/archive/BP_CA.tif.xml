@@ -1,0 +1,369 @@
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>Scott, Joe H.</origin>
+        <origin>Gilbertson-Day, Julie W.</origin>
+        <origin>Moran, Christopher</origin>
+        <origin>Dillon, Gregory K.</origin>
+        <origin>Short, Karen C.</origin>
+        <origin>Vogler, Kevin C.</origin>
+        <pubdate>2020</pubdate>
+        <title>Wildfire Risk to Communities: Spatial datasets of landscape-wide wildfire risk components for the United States</title>
+        <geoform>raster digital data</geoform>
+        <pubinfo>
+          <pubplace>Fort Collins, CO</pubplace>
+          <publish>Forest Service Research Data Archive</publish>
+        </pubinfo>
+        <onlink>https://doi.org/10.2737/RDS-2020-0016</onlink>
+        <othercit>This dataset is the Burn Probability (BP) for California.</othercit>
+      </citeinfo>
+    </citation>
+    <descript>	
+      <purpose>The geospatial data products described and distributed here are part of the Wildfire Risk to Communities project. This project was directed by Congress in the 2018 Consolidated Appropriations Act (i.e., 2018 Omnibus Act, H.R. 1625, Section 210: Wildfire Hazard Severity Mapping) to help U.S. communities understand components of their relative wildfire risk profile, the nature and effects of wildfire risk, and actions communities can take to mitigate risk. These data represent the first time wildfire risk to communities has been mapped nationally with consistent methodology. They provide foundational information for comparing the relative wildfire risk among populated communities in the United States.</purpose>
+      <abstract>This dataset is the Burn Probability (BP) for California. It is part of the Wildfire Risk to Communities: Spatial datasets of landscape-wide wildfire risk components for the United States. BP represents the annual probability of wildfire burning in a specific location. It is referred to as Wildfire Likelihood in the Wildfire Risk to Communities web application.
+
+Vegetation and wildland fuels data from LANDFIRE 2014 (version 1.4.0) form the foundation for the Wildfire Risk to Communities data. As such, the data presented here reflect landscape conditions as of the end of 2014. National wildfire hazard datasets of annual burn probability and fire intensity were generated from the LANDFIRE 2014 data by the USDA Forest Service, Rocky Mountain Research Station (Short et al. 2020) using the large fire simulation system (FSim). These national datasets produced with FSim have a relatively coarse cell size of 270 meters (m). To bring these datasets down to a finer resolution more useful for assessing hazard and risk to communities, we upsampled them to the native 30 m resolution of the LANDFIRE fuel and vegetation data. In this upsampling process, we also spread values of modeled burn probability and intensity into developed areas represented in LANDFIRE fuels data as non-burnable. Additional methodology documentation is provided with the data publication download.</abstract>
+      <supplinf>See the Wildfire Risk to Communities website at https://www.wildfirerisk.org for complete project information and an interactive web application for exploring this BP dataset. Because of the large file size of 30 m resolution raster data, we deliver the data here as zip files by U.S. state. Users requiring the entire United States can request the complete dataset as national mosaics through the point of contact listed in this metadata document.</supplinf>
+    </descript>
+    <timeperd>
+      <timeinfo>
+        <sngdate>
+          <caldate>20150101</caldate>
+        </sngdate>
+      </timeinfo>
+      <current>Ground condition</current>
+    </timeperd>
+    <status>
+      <update>As needed</update>
+      <progress>Complete</progress>
+    </status>
+    <spdom>
+      <bounding>
+        <eastbc>-113.8035177</eastbc>
+        <northbc>41.81527476</northbc>
+        <westbc>-125.0133402</westbc>
+        <southbc>32.85980972</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>ISO 19115 Topic Categories</themekt>
+        <themekey>environment</themekey>
+        <themekey>geoscientificInformation</themekey>
+        <themekey>society</themekey>
+        <themekey>structure</themekey>
+      </theme>
+      <theme>
+        <themekt>National Research &amp; Development Taxonomy</themekt>
+        <themekey>Ecology, Ecosystems, &amp; Environment</themekey>
+        <themekey>Fire</themekey>
+        <themekey>Fire detection</themekey>
+        <themekey>Fire ecology</themekey>
+        <themekey>Fire effects on environment</themekey>
+        <themekey>Fire suppression, pre-suppression</themekey>
+        <themekey>Prescribed fire</themekey>
+        <themekey>Environment and People</themekey>
+        <themekey>Forest management</themekey>
+        <themekey>Landscape management</themekey>
+      </theme>
+      <theme>
+        <themekt>None</themekt>
+        <themekey>burn probability</themekey>
+        <themekey>hazard</themekey>
+        <themekey>fuels management</themekey>
+        <themekey>fire suppression</themekey>
+        <themekey>fire likelihood</themekey>
+        <themekey>fire planning</themekey>
+        <themekey>risk assessment</themekey>
+        <themekey>wildfire hazard potential</themekey>
+      </theme>
+      <place>
+        <placekt>None</placekt>
+        <placekey>conterminous United States</placekey>
+        <placekey>United States</placekey>
+        <placekey>CONUS</placekey>
+        <placekey>California</placekey>
+      </place>
+    </keywords>
+    <accconst>None</accconst>
+    <useconst>These data were collected using funding from the U.S. Government and can be used without additional permissions or fees. If you use these data in a publication, presentation, or other research product please use the following citation: 
+
+Scott, Joe H.; Gilbertson-Day, Julie W.; Moran, Christopher; Dillon, Gregory K.; Short, Karen C.; Vogler, Kevin C. 2020. Wildfire Risk to Communities: Spatial datasets of landscape-wide wildfire risk components for the United States. Fort Collins, CO: Forest Service Research Data Archive. https://doi.org/10.2737/RDS-2020-0016
+
+The data presented here are the product of modeling, and as such carry an inherent degree of error and uncertainty. Users are strongly encouraged to read and fully comprehend the metadata and other available documentation prior to data use. No warranty is made by the Originator as to the accuracy, reliability, or completeness of these data for individual use or aggregate use with other data, or for purposes not intended by the Originator. These datasets are intended to provide nationally-consistent information for the purpose of comparing relative wildfire risk among communities nationally or within a state or county. Data included here are not intended to replace locally-calibrated state, regional, or local risk assessments where they exist. It is the responsibility of the user to be familiar with the value, assumptions, and limitations of these national data publications. Managers and planners must evaluate these data according to the scale and requirements specific to their needs. Spatial information may not meet National Map Accuracy Standards. This information may be updated without notification.</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntperp>
+          <cntper>Gregory K. Dillon</cntper>
+          <cntorg>USDA Forest Service, Fire Modeling Institute (FMI)</cntorg>
+        </cntperp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>Missoula Fire Sciences Laboratory</address>
+          <address>5775 US Hwy 10 W</address>
+          <city>Missoula</city>
+          <state>MT</state>
+          <postal>59808</postal>
+          <country>USA</country>
+        </cntaddr>
+        <cntvoice>406-829-6783</cntvoice>
+		<cntpos>Spatial Fire Analyst</cntpos>
+        <cntemail>greg.dillon@usda.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <datacred>Funding for this project provided by USDA Forest Service, Fire and Aviation Management. Funding also provided by USDA Forest Service, Fire Modeling Institute, which is part of the Rocky Mountain Research Station, Fire, Fuel and Smoke Science Program. Work on dataset development was primarily completed by Pyrologix, LLC under contract with the USDA Forest Service, Fire Modeling Institute.</datacred>
+    <crossref>
+      <citeinfo>
+        <origin>Short, Karen C.</origin>
+        <origin>Finney, Mark A.</origin>
+        <origin>Vogler, Kevin C.</origin>
+        <origin>Scott, Joe H.</origin>
+        <origin>Gilbertson-Day, Julie W.</origin>
+        <origin>Grenfell, Isaac C.</origin>
+        <pubdate>2020</pubdate>
+        <title>Spatial dataset of probabilistic wildfire risk components for the United States (270m)</title>
+        <edition>2nd</edition>
+        <geoform>raster digital data</geoform>
+        <pubinfo>
+          <pubplace>Fort Collins, CO</pubplace>
+          <publish>Forest Service Research Data Archive</publish>
+        </pubinfo>
+        <othercit>https://doi.org/10.2737/RDS-2016-0034-2</othercit>
+      </citeinfo>
+    </crossref>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr>The data described here are derived from wildfire simulation modeling, and their exact accuracy cannot be measured. They are intended to be relative measures of wildfire risk for planning purposes. The FSim datasets of burn probability and intensity used as primary inputs were objectively evaluated and calibrated against historic wildfire occurrence statistics within 136 distinct regions of contemporary wildfire activity (pyromes) across the United States (Short, Grenfell, Riley, and Vogler 2020). See Short et al. (2020) for a more detailed description of FSim calibration. Some LANDFIRE fuels and vegetation data used as inputs have also been evaluated for efficacy and calibrated to meet the objectives of LANDFIRE. More information can be found at: https://www.landfire.gov/lf_evaluation.php.
+Short, Karen C.; Grenfell, Isaac C.; Riley, Karin L.; Vogler, Kevin C. 2020. Pyromes of the conterminous United States. Fort Collins, CO: Forest Service Research Data Archive. https://doi.org/10.2737/RDS-2020-0020
+
+Short, Karen C.; Finney, Mark A.; Vogler, Kevin C.; Scott, Joe H.; Gilbertson-Day, Julie W.; Grenfell, Isaac C. 2020. Spatial datasets of probabilistic wildfire risk components for the United States (270m). 2nd Edition. Fort Collins, CO: Forest Service Research Data Archive. https://doi.org/10.2737/RDS-2016-0034-2
+	  </attraccr>
+      <qattracc>
+        <attraccv>Unknown</attraccv>
+        <attracce>Quantitative accuracy cannot be evaluated.</attracce>
+      </qattracc>
+    </attracc>
+    <logic>Pixel values in this BP dataset for the United States are between 0 and 0.12. Zero values indicate areas that had no probability of wildfire according to modeling.</logic>
+    <complete>All pixels that are part of the land and water of the United States have valid non-negative values.</complete>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>Short, Karen C.</origin>
+            <origin>Finney, Mark A.</origin>
+            <origin>Vogler, Kevin C.</origin>
+            <origin>Scott, Joe H.</origin>
+            <origin>Gilbertson-Day, Julie W.</origin>
+            <origin>Grenfell, Isaac C.</origin>
+            <pubdate>2020</pubdate>
+            <title>Spatial dataset of probabilistic wildfire risk components for the United States (270m)</title>
+            <edition>2nd</edition>
+            <geoform>raster digital data</geoform>
+            <pubinfo>
+              <pubplace>Fort Collins, CO</pubplace>
+              <publish>Forest Service Research Data Archive</publish>
+            </pubinfo>
+            <othercit>https://doi.org/10.2737/RDS-2016-0034-2</othercit>
+          </citeinfo>
+        </srccite>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate>20150101</caldate>
+            </sngdate>
+          </timeinfo>
+          <srccurr>Ground Condition</srccurr>
+        </srctime>
+        <srccitea>FSim BP and FLPs (FLP1, FLP2, FLP3, FLP4, FLP5, FLP6)</srccitea>
+        <typesrc>Online</typesrc>
+        <srccontr>Burn probability (BP) and/or flame-length probabilities (FLPs) modeled with FSim were primary spatial inputs to datasets presented here. BP provided information about the overall probability of any 270-meter pixel experiencing a large fire of any intensity. FLPs provided information about the conditional probability of particular fire intensity levels (i.e., likelihood of a particular intensity level, given a fire) for every 270-meter pixel.</srccontr>
+      </srcinfo>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>LANDFIRE, U.S. Department of the Interior, Geological Survey</origin>
+            <pubdate>2017</pubdate>
+            <title>LANDFIRE 1.4.0 40 Scott and Burgan Fire Behavior Fuel Models layer</title>
+            <edition>1.4.0</edition>
+            <geoform>raster digital data</geoform>
+            <othercit>Scott, Joe H.; Burgan, Robert E. 2005. Standard fire behavior fuel models: a comprehensive set for use with Rothermel's surface fire spread model. Gen. Tech. Rep. RMRS-GTR-153. Fort Collins, CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station. 72 p. https://doi.org/10.2737/rmrs-gtr-153</othercit>
+            <onlink>https://landfire.cr.usgs.gov/viewer/</onlink>
+            <onlink>https://www.landfire.gov/fuel.php</onlink>
+          </citeinfo>
+        </srccite>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate>20150101</caldate>
+            </sngdate>
+          </timeinfo>
+          <srccurr>Ground Condition</srccurr>
+        </srctime>
+        <srccitea>LANDFIRE FBFM40</srccitea>
+        <typesrc>Online</typesrc>
+        <srccontr>The LANDFIRE Fire Behavior Fuel Models layer was a primary input to the FSim BP dataset.</srccontr>
+      </srcinfo>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>Short, Karen C.</origin>
+            <pubdate>2017</pubdate>
+            <title>Spatial wildfire occurrence data for the United States, 1992-2015 [FPA_FOD_20170508]</title>
+            <edition>4th</edition>
+            <geoform>vector digital data</geoform>
+            <pubinfo>
+              <pubplace>Fort Collins, CO</pubplace>
+              <publish>Forest Service Research Data Archive</publish>
+            </pubinfo>
+            <othercit>Spatial wildfire occurrence Additional information is available in: Short, Karen C. 2014. A spatial database of wildfires in the United States, 1992-2011. Earth Systems Science Data 6:1-27. https://doi.org/10.5194/essd-6-1-2014</othercit>
+            <onlink>https://doi.org/10.2737/RDS-2013-0009.4</onlink>
+          </citeinfo>
+        </srccite>
+        <srctime>
+          <timeinfo>
+            <rngdates>
+              <begdate>19920101</begdate>
+              <enddate>20151231</enddate>
+            </rngdates>
+          </timeinfo>
+          <srccurr>Observed</srccurr>
+        </srctime>
+        <srccitea>FPA FOD</srccitea>
+        <typesrc>Online</typesrc>
+        <srccontr>The FPA point fire occurrence database (FPA FOD) was used in the process of creating the FSim BP raster.</srccontr>
+      </srcinfo>
+      <procstep>
+        <srcused>FSim BP, LANDFIRE FBFM40</srcused>
+        <procdesc>1. Downscale the nationally-available FSim Burn Probability data to 30-m resolution using a raster upsampling process.
+
+The first step in this process was to fill in the 270-m cells that resulted in a BP of zero (regardless of whether or not the pixels were burnable) with the mean of the non-zero cells immediately surrounding them. This was done by setting zero-BP cells to nodata, then running two low-pass filters over the 270-m raster. The nodata values were then reverted back to zero, and the resulting raster was resampled to 30-m using cubic convolution , which does some interpolation among the 30-m cells within each 270-m cell. A 30-m processing mask was used after the resampling so that the BP was set to nodata for open water and snow/ice land covers (based on the LANDFIRE FBFM40 dataset) and any BP values less than zero produced in the cubic convolution set back to zero.
+
+The second step in creating the 30-m BP was to identify and set aside nonzero BP values from isolated blocks of burnable fuel less than 500 ha in size. This was accomplished by identifying contiguous patches of burnable fuel using the ArcGIS Region Group tool on the 30-m, burnable fuel grid (LANDFIRE FBFM40). After isolating the small islands of burnable fuel surrounded by nonburnable, the nonzero BP values within the islands were temporarily set to NoData to prevent burn probability from being spread well into nonburnable areas from these small islands. See WildfireRiskToCommunities_Methods.pdf included in the supplemental files with this data publication for a more detailed detailed description.</procdesc>
+        <procdate>20191200</procdate>
+      </procstep>
+      <procstep>
+        <srcused>LANDFIRE FBFM40</srcused>
+        <procdesc>2. Spatially smooth BP and allow for non-zero values in otherwise nonburnable areas to mimic the effects of wildfire penetration into developed housing areas. To be consistent with existing definitions of Wildland Urban Interface (and with the distance of observed spread during urban conflagrations), the 30-m resampled BP results were expanded into adjacent nonburnable areas by setting nodata back to zero (except in open water, snow and ice, and small burnable islands), then performing three iterative 510-m moving-window means. BP was not allowed to spread into open water or snow and ice land covers, but it was allowed into bare ground and agriculture land covers as well as developed urban areas. This method results in BP values that rapidly diminish with increasing distance into nonburnable areas. The total distance BP values are spread into nonburnable areas is 1530 m (approximately 1 mi) from the three iterative focal mean operations. See WildfireRiskToCommunities_Methods.pdf included in the supplemental files with this data publication for a more detailed detailed description.</procdesc>
+        <procdate>201912</procdate>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Pixel</rasttype>
+      <rowcount>40346</rowcount>
+      <colcount>23649</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Albers Conical Equal Area</mapprojn>
+          <albers>
+            <stdparll>29.5</stdparll>
+            <stdparll>45.5</stdparll>
+            <longcm>-96</longcm>
+            <latprjo>23</latprjo>
+            <feast>0</feast>
+            <fnorth>0</fnorth>
+          </albers>
+        </mapproj>
+        <planci>
+          <coordrep>
+            <absres>30</absres>
+            <ordres>30.00</ordres>
+          </coordrep>
+          <plance>Row and Column</plance>
+          <plandu>Meters</plandu>
+        </planci>
+      </planar>
+      <geodetic>
+        <ellips>Geodetic Reference System 80</ellips>
+        <semiaxis>6378137.0000</semiaxis>
+        <horizdn>North American Datum of 1983</horizdn>
+        <denflat>298.25722210</denflat>
+      </geodetic>
+    </horizsys>
+  </spref>
+  <eainfo>
+    <overview>
+      <eaover>Continuous values of annual burn probability. Values for the United States are between 0 and 0.12. Values for California are between 0 and 0.091183.
+</eaover>
+      <eadetcit>Scott, Joe H.; Thompson, Matthew P.; Calkin, David E. 2013. A wildfire risk assessment framework for land and resource management. Gen. Tech. Rep. RMRS-GTR-315. U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station. 83 p. https://www.fs.usda.gov/treesearch/pubs/56265</eadetcit>
+    </overview>
+  </eainfo>
+  <distinfo>
+    <resdesc>RDS-2020-0016</resdesc>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USDA Forest Service, Research and Development</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>240 West Prospect Road</address>
+          <city>Fort Collins</city>
+          <state>CO</state>
+          <postal>80526</postal>
+          <country>USA</country>
+        </cntaddr>
+        <cntvoice>see Contact Instructions</cntvoice>
+        <cntpos>Research Data Archivist</cntpos>
+        <cntinst>This contact information was current as of March 2020. For current information see Contact Us page on: https://doi.org/10.2737/RDS.</cntinst>
+      </cntinfo>
+    </distrib>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formvern>2020</formvern>
+          <formname>TIFF</formname>
+          <formcont>32 Bit floating point; LZW compression; pyramids: levels 5, Nearest Neighbor resampling</formcont>
+          <filedec>Files zipped using the zipfile module in Python 2.7.16 (.ZIP file format version 6.3.6)</filedec>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://doi.org/10.2737/RDS-2020-0016</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+    <distliab>Metadata documents have been reviewed for accuracy and completeness. Unless otherwise stated, all data and related materials are considered to satisfy the quality standards relative to the purpose for which the data were collected. However, neither the author, the Archive, nor any part of the federal government can assure the reliability or suitability of these data for a particular purpose. The act of distribution shall not constitute any such warranty, and no responsibility is assumed for a user's application of these data or related materials.
+
+The metadata, data, or related materials may be updated without notification. If a user believes errors are present in the metadata, data or related materials, please use the information in (1) Identification Information: Point of Contact, (2) Metadata Reference: Metadata Contact, or (3) Distribution Information: Distributor to notify the author or the Archive of the issues.</distliab>
+    <custom>Because of the large file size of 30 m resolution raster data, we deliver the data here as zip files by U.S. state. Users requiring the entire United States can request the complete dataset as national mosaics through the point of contact listed in this metadata document.</custom>
+  </distinfo>
+  <metainfo>
+    <metd>20200331</metd>
+    <metc>
+      <cntinfo>
+        <cntperp>
+          <cntper>Gregory K. Dillon</cntper>
+          <cntorg>USDA Forest Service, Fire Modeling Institute (FMI)</cntorg>
+        </cntperp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>Missoula Fire Sciences Laboratory</address>
+          <address>5775 US Hwy 10 W</address>
+          <city>Missoula</city>
+          <state>MT</state>
+          <postal>59808</postal>
+          <country>USA</country>
+        </cntaddr>
+        <cntvoice>406-829-6783</cntvoice>
+		<cntpos>Spatial Fire Analyst</cntpos>
+        <cntemail>greg.dillon@usda.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metstdn>FGDC Content Standard for Digital Geospatial Metadata</metstdn>
+    <metstdv>FGDC-STD-001.1-1999</metstdv>
+  </metainfo>
+</metadata>
