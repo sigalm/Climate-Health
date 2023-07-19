@@ -3,6 +3,7 @@
 # ================================
 rm(list = ls()) # remove any variables in R's memory
 
+setwd("C:/Users/alkin/Desktop/sigal sim/Climate-Health")
 source("Sim Functions/MicroSim_20230324.R")
 source("Sim Functions/Probs2.R")
 source("Sim Functions/Costs.R")
@@ -11,14 +12,17 @@ source("Sim Functions/multisheet2array.R")
 source("Sim Functions/logging.R")
 library(readxl)
 library(dplyr)
+library(profvis)
+
+
 ##################
 
 
 #### 1) Population Inputs ####
 #### Structural parameters ####
 
-n_i <- 5000                           # number of individuals
-n_t <- 52                             # time horizon (cycles)
+n_i <- 5000                              # number of individuals
+n_t <- 10                             # time horizon (cycles)
 cycle_length <- 1/52                  # length of each cycle (in years)
 
 v_asthma_state_names <- c("0",        # No asthma 
@@ -137,7 +141,7 @@ m_fire.0[m_fire>0] <- 0
 
 #### 3) Run Model ####
 
-sim_no_fire <- MicroSim(n_i, n_t, 
+ profvis({sim_no_fire <-MicroSim(n_i, n_t, 
                         m_fire = m_fire.0,
                         v_asthma_state_names, 
                         pop_sample, 
@@ -156,8 +160,14 @@ sim_no_fire <- MicroSim(n_i, n_t,
                         discount_rate_costs,
                         discount_rate_qalys,
                         seed = 12345,
-                        logger = FALSE)
+                        record_run = FALSE,
+                        description="Asthma Sim No Fire")})
 
+sim_no_fire_rerun <- reRunMicroSim("Runs/results_20230718_2032.RData")
+
+
+
+identical(sim_no_fire, sim_no_fire_rerun)
 
 
 # sim_fire_noIntervention <- MicroSim(v_init_asthma_states,
