@@ -12,7 +12,7 @@ Probs <- function(M_it,                           # health state occupied by ind
                   fire_it,                        # fire experience of individual i at cycle t (binary)
                   intervention_coverage_it,       # intervention receipt of individual i at cycle t (binary)
                   death_rate_t,
-                  logger = FALSE) {                 # death rate adjuster for cycle t
+                  record_run = FALSE) {                 # death rate adjuster for cycle t
 
   # Setup
   from_state = as.character(M_it)
@@ -55,16 +55,16 @@ Probs <- function(M_it,                           # health state occupied by ind
   
   if (any(is.na(v_probs_it))) {
     err_msg <- paste("NAs produced at cycle", t, "individual", i)
-    log_output(logger, err_msg)
+    log_output(record_run, err_msg)
     stop(err_msg)
   } else if (any(v_probs_it < 0)) {
     err_msg <- paste("Negative probability calculated at cycle", t, "individual", i, ":", toString(v_probs_it))
-    log_output(logger, err_msg)
+    log_output(record_run, err_msg)
     stop(err_msg)
   } else if (!isTRUE(all.equal(sum(v_probs_it), 1, tolerance = 1e-9))) {
     err_msg <- paste("Probabilities do not sum to 1 at cycle", t, "individual", i, ": ", toString(sum(v_probs_it)), 
                      "\nProbabilities: ", toString(v_probs_it))
-    log_output(logger, err_msg)
+    log_output(record_run, err_msg)
     stop(err_msg)
   } else {
     return(v_probs_it)

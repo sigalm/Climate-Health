@@ -1,0 +1,86 @@
+   parameter_metadata <- data.frame(
+      parameter_name = c( 
+        "n_i",
+        "n_t",
+        "m_fire",
+        "v_asthma_state_names",
+        "pop_sample",
+        "risk_modifiers",
+        "cycle_length",
+        "baseline_birth_rate",
+        "annual_birth_rate_change",
+        "annual_allcause_mortality_change",
+        "v_asthma_therapies",
+        "m_asthma_therapy_probs",
+        "v_asthma_costs",
+        "v_intervention_costs",
+        "counties",
+        "county_distance_weights",
+        "intervention_coverage",
+        "intervention_trigger",
+        "discount_rate_costs",
+        "discount_rate_qalys"),
+      parameter_description = c(
+        "The number of individuals in the population.",
+        "The number of time periods considered in the analysis.",
+        "The prevalence of fires in the study area.",
+        "The list of possible states or categories for asthma.",
+        "A representative sample of the population.",
+        "Transition Probabilities and Factors that modify the risk of asthma.",
+        "The length of each cycle or time step in the analysis.",
+        "The initial birth rate in the population.",
+        "The annual change in the birth rate.",
+        "The annual change in all-cause mortality rate.",
+        "The list of available therapies for asthma.",
+        "The probabilities associated with each asthma therapy.",
+        "The costs associated with different asthma treatments.",
+        "The costs of implementing interventions for asthma.",
+        "The list of counties or geographical areas.",
+        "The weights assigned to the distances between counties.",
+        "The percentage of the population covered by interventions.",
+        "The condition or threshold for initiating interventions.",
+        "The discount rate applied to costs in the analysis.",
+        "The discount rate applied to quality-adjusted life years (QALYs) in the analysis."
+      ),
+      parameter_value = c(n_i,
+                          n_t,
+                          m_fire,
+                          v_asthma_state_names,
+                          pop_sample,
+                          risk_modifiers, 
+                          cycle_length,
+                          baseline_birth_rate,
+                          annual_birth_rate_change, 
+                          annual_allcause_mortality_change,
+                          v_asthma_therapies,
+                          m_asthma_therapy_probs, 
+                          v_asthma_costs,
+                          v_intervention_costs,
+                          counties,
+                          county_distance_weights, 
+                          intervention_coverage, 
+                          intervention_trigger, 
+                          discount_rate_costs,
+                          discount_rate_qalys),
+      stringsAsFactors = FALSE
+    )
+    
+    
+check_different <- function(list1, list2) {
+  for (key in names(list1)) {
+    v1 <- list1[[key]]
+    v2 <- list2[[key]]
+    if (!identical(v1,v2)){
+      print(paste("Key:", key))
+      if (is.list(v1)){
+        check_different(v1, v2)
+      }else{
+        print(v1)
+        print(v2)
+      }
+    }
+  }
+}
+check_different(sim_no_fire, sim_no_fire_rerun)
+check_different(sim_no_fire$metadata, sim_no_fire_rerun$metadata)
+check_different(sim_no_fire$metadata$parameters, sim_no_fire_rerun$metadata$parameters)

@@ -19,19 +19,50 @@ MicroSim <- function(n_i,
                      discount_rate_costs,
                      discount_rate_qalys,
                      seed = 1, 
-                     logger = FALSE) {
+                     record_run = TRUE,
+                     description = "This is an asthma simulation"
+                     ) {
   
-  # ===============SET UP LOGS==================
-  log_file <- NULL
-  if (logger) {
-    timestamp <- format(Sys.time(), "%Y%m%d_%H%M")
-    log_file_name <- paste0("logs/log_", timestamp, ".txt")
-    log_file <- file(log_file_name, open = "a")
-    snapshot_list <- vector("list", n_t)
+  # ===============SET UP LOGS/RECORDS ==================
+  start_time <- Sys.time()
+  
+  timestamp <- format(start_time, "%Y%m%d_%H%M")
+  log_file_name <- paste0("Runs/log_", timestamp, ".txt")
+  log_file <- file(log_file_name, open = "a")
+  
+  metadata <- NULL
+  if (record_run) {
+    metadata <- list(
+      parameters = list(
+        n_i = n_i,
+        n_t = n_t,
+        m_fire = m_fire,
+        v_asthma_state_names = v_asthma_state_names,
+        pop_sample = pop_sample,
+        risk_modifiers = risk_modifiers,
+        cycle_length = cycle_length,
+        baseline_birth_rate = baseline_birth_rate,
+        annual_birth_rate_change = annual_birth_rate_change,
+        annual_allcause_mortality_change = annual_allcause_mortality_change,
+        v_asthma_therapies = v_asthma_therapies,
+        m_asthma_therapy_probs = m_asthma_therapy_probs,
+        v_asthma_costs = v_asthma_costs,
+        v_intervention_costs = v_intervention_costs,
+        counties = counties,
+        county_distance_weights = county_distance_weights,
+        intervention_coverage = intervention_coverage,
+        intervention_trigger = intervention_trigger,
+        discount_rate_costs = discount_rate_costs,
+        discount_rate_qalys = discount_rate_qalys,
+        seed = seed,
+        record_run = record_run,
+        description = description
+      )
+    )
+    
   }
   
-  log_output(logger, "...INITIALIZING...", log_file)
-  start_time <- Sys.time()
+  log_output(100, "...INITIALIZING...", log_file)
   
   # =================INITIALIZE================
   
@@ -83,19 +114,20 @@ MicroSim <- function(n_i,
   v_total_pop  <- rep(NA, n_t+1)                                                 # vector to track population size over each cycle
   v_total_pop[1] <- n_i
   
-  log_output(logger, 
+  log_output(record_run, 
              paste0("Starting simulation for n_i = ", n_i, 
                     " and n_t = ", n_t, "."), log_file)
   
+  # ================= SIMULATION LOOP START ================
   for (t in 1:n_t) {                                                             # start loop for time cycles
     
     total_births_t <- 0                                                          # initialize variable to keep track of number of births (define this in the loop because we want it to reset each cycle)
     
+    log_output(3, sprintf("Simulating cycle t=%s/%s", t, n_t), log_file)
     for (i in 1:n_i) {
       
       set.seed(seed+i*79+t*71)                                                   # set seed for every individual
-      county_index <- match(pop_sample$countyfip[i], 
-                                  counties)                           # get neighborhood number of individual i
+      county_index <- match(pop_sample$countyfip[i], counties)                   # get neighborhood number of individual i
       
       
       # determine if individual gets intervention
@@ -106,7 +138,7 @@ MicroSim <- function(n_i,
       fire_it <- m_fire[county_index, t]
       exposure_it <- sum(m_fire[ ,t] * 
                            county_distance_weights[ ,county_index])    
-      
+
       set.seed(seed+i*79+t*71) 
       if (intervention_coverage>0 & 
           (fire_it==1 | exposure_it>=intervention_trigger)) {
@@ -132,8 +164,9 @@ MicroSim <- function(n_i,
                        fire_it = fire_it, 
                        intervention_coverage_it = m_intervention_receipt[i,t],
                        death_rate_t = v_death_rate_adjusters[t],
-                       logger = logger)
-    
+                       record_run = record_run)
+      log_output(1, sprintf("   Probs calculated i=%s in" , i), log_file)
+      
       
       set.seed(seed+i*79+t*71) 
       m_asthma_states[i, t+1] <- 
@@ -149,7 +182,6 @@ MicroSim <- function(n_i,
       
       # Determine new therapy if therapy changed
       set.seed(seed+i*79+t*71) 
-      
       worse_control <- as.integer(m_asthma_states[i,t+1]) > 
         as.integer(m_asthma_states[i, t])                                        # assess if asthma control status got worse
       last_dr_visit <-  (t+1) - 
@@ -200,8 +232,9 @@ MicroSim <- function(n_i,
                                v_intervention_costs = v_intervention_costs)
       
       
+      # estimate QALYs for individual i at cycle t+1
       m_qalys[i, t+1] <- Effs(M_it = m_asthma_states[i, t+1], 
-                              x_i=pop_sample[i, ])                    # estimate QALYs for individual i at cycle t+1
+                              x_i=pop_sample[i, ])                    
       
       pop_sample$age[i] <- 
         pop_sample$age[i] + cycle_length                              # increase age by cycle length
@@ -215,7 +248,6 @@ MicroSim <- function(n_i,
       
       
       # if individual is not Dead, determine # of kids born in year t
-      
       if (m_asthma_states[i,t+1] != "50" & m_asthma_states[i, t+1] != "100") {
         set.seed(seed+i*79+t*71) 
         kids_it <- rpois(1, v_birth_rates[t])                                    # determine if individual i had children and how many using a 
@@ -226,7 +258,7 @@ MicroSim <- function(n_i,
         # and add new row to pop_sample
         
         if (kids_it > 0) {
-          # cat("I have",kids_it,"baby(ies)klklnknkllk)!", i,"\n")
+          log_output(record_run, sprintf("Individual=%s had a kid at t=%s", i, t))
           for (kid in 1:kids_it) {
             new_x <- c(as.numeric(pop_sample[nrow(pop_sample), 'id'] + 1), # get last ID in population and add 1
                        as.numeric(0),                                                     # age is 0
@@ -262,26 +294,13 @@ MicroSim <- function(n_i,
     n_i <- n_i + total_births_t                                                  # increase n_i for next cycle by the total number of births
     v_total_pop[t+1] <- n_i                                                      # add the new population size to the population size tracking vector
     
-    if (logger) {
-      snapshot_df = data.frame(
-        id =  pop_sample$id,
-        age =  pop_sample$age,
-        sex =  pop_sample$sex,
-        rural = pop_sample$rural,
-        fire_exposure = exposure_it,
-        intervention = m_intervention_receipt[ , t+1],
-        asthma_health_state = m_asthma_states[ , t+1],
-        asthma_therapy = m_asthma_therapies[ , t+1],
-        asthma_healthcare_use = m_asthma_healthcare_use[ , t+1])
-      
-      snapshot_list[[t]] <- snapshot_df
-    
-    }
-    
+  
     
   }    # close loop for cycles
   
-  log_output(logger, "Simulation complete. Preparing results.", log_file)
+  # ================= SIMULATION LOOP END ================
+  
+  log_output(record_run, "Simulation complete. Preparing results.", log_file)
   
   tc <- m_costs %*% v_discount_weights_costs                                     # total discounted costs per individual
   te <- (m_qalys * cycle_length) %*% v_discount_weights_qalys                    # total discounted QALYs per individual
@@ -316,24 +335,67 @@ MicroSim <- function(n_i,
     pop_sample_end = pop_sample, 
     TR_absolute = TR_absolute,
     TR_proportion = TR_proportion, 
-    tx_tracker = tx_tracker)
+    tx_tracker = tx_tracker
+    )
   
-  if (logger) {
-    results$snapshot_list <- snapshot_list
-  }
   
   end_time <- Sys.time()
   
-  log_output(logger, 
+  log_output(record_run, 
              paste0("Results saved. Total run time: ", 
                     difftime(end_time, start_time)), log_file)
   
   if (!is.null(log_file)) {
     close(log_file)
   }
+  
+  if (record_run) {
+    results[["metadata"]] <- metadata
+    timestamp <- format(start_time, "%Y%m%d_%H%M")
+    result_file_path <- paste0("runs/results_", timestamp, ".RData")
+    save(results, file = result_file_path)
+    
+    add_results_to_simulation_list(result_file_path, description, n_i, n_t)
+  }
+  
 
   return(results)
   
+}
+
+reRunMicroSim <- function(results_file) {
+  # Read the metadata from the file
+  load(results_file)
+
+  # Extract the parameters from metadata
+  parameters <- results$metadata$parameters
+  
+  # Call MicroSim function with extracted parameters
+  MicroSim(
+    n_i = parameters$n_i,
+    n_t = parameters$n_t,
+    m_fire = parameters$m_fire,
+    v_asthma_state_names = parameters$v_asthma_state_names,
+    pop_sample = parameters$pop_sample,
+    risk_modifiers = parameters$risk_modifiers,
+    cycle_length = parameters$cycle_length,
+    baseline_birth_rate = parameters$baseline_birth_rate,
+    annual_birth_rate_change = parameters$annual_birth_rate_change,
+    annual_allcause_mortality_change = parameters$annual_allcause_mortality_change,
+    v_asthma_therapies = parameters$v_asthma_therapies,
+    m_asthma_therapy_probs = parameters$m_asthma_therapy_probs,
+    v_asthma_costs = parameters$v_asthma_costs,
+    v_intervention_costs = parameters$v_intervention_costs,
+    counties = parameters$counties,
+    county_distance_weights = parameters$county_distance_weights,
+    intervention_coverage = parameters$intervention_coverage,
+    intervention_trigger = parameters$intervention_trigger,
+    discount_rate_costs = parameters$discount_rate_costs,
+    discount_rate_qalys = parameters$discount_rate_qalys,
+    seed = parameters$seed,
+    record_run = parameters$record_run,
+    description = parameters$description
+  )
 }
 
 
