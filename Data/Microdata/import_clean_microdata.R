@@ -139,7 +139,8 @@ data <- data %>%
   mutate(asthma_status = mapply(assign_asthma_status, countyfip, age_cat, poverty_cat))
 
 ## Add initial asthma therapy based on control
-asthma_therapies <- read.csv("Data/Asthma/Therapies/therapies.csv", row.names = 1)
+asthma_therapies <- read.csv("Data/Asthma/Therapies/therapies.csv", row.names = 1) # https://onlinelibrary.wiley.com/doi/10.1111/j.1398-9995.2007.01383.x
+
 
 data$asthma_therapy <- apply(asthma_therapies[as.character(data$asthma_status), ], 1, function(row) {
   sample(names(asthma_therapies), 1, prob = row)

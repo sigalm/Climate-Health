@@ -46,29 +46,6 @@ pop_sample <- full_pop[sample(nrow(full_pop), size = n_i), ]
 pop_sample$id <- 1:n_i                                                             # add ID numbers
 
 
-# m_individual_features$prior_exposure <- FALSE                                    # no previous exposure at the beginning
-
-counties <- read.csv("Data/Microdata/counties.csv")
-counties <- counties$FIPS
-n_counties <- length(counties) # save total number of neighborhoods
-
-# Create county smoke impact map. The smoke impact will be the inverse of
-# the distance (so if the fire is further away, the impact will be
-# proportionately smaller)
-library(geosphere)
-coordinates <- read.table("Data/Fire/archive/county_coordinates.txt", sep = "\t",
-                          header = TRUE)                                         # https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html
-coordinates$GEOID <- coordinates$GEOID - 6000                                    # These are the FIPS codes without the state FIPS
-
-distance_matrix <- distm(coordinates[, c("INTPTLONG", "INTPTLAT")],
-                         fun = distHaversine)                                    # Calculate the distance matrix between counties using the Haversine formula
-inverse_distance <- 1/(distance_matrix + 1)                                      # Add 1 to avoid division by 0 errors
-
-county_distance_weights <- scales::rescale(inverse_distance)                     # Rescale inverse of distance such that effect size in same county is 1, and decreases as you go farther away
-rownames(county_distance_weights) <-
-  colnames(county_distance_weights) <-
-  coordinates$GEOID
-
 discount_rate_costs <- discount_rate_qalys <- 0.0                                # 3% discount rate for both costs and QALYs (0 for biweekly cycycle_lengthes up to a year)
 
 v_interventions <- c("No intervention", "Distribute air filter")                 # intervention names (non-medical interventions)
@@ -124,25 +101,27 @@ v_asthma_hsu <- c(1,         # 0 (no asthma)
 
 #### 2) Climate Data ####
 
-m_fire <- readRDS("Data/Fire/archive/fire_data_28apr2023.rds")
+# m_fire <- readRDS("Data/Fire/archive/fire_data_28apr2023.rds")
+# 
+# ## TESTS ##
+# m_fire[,] <- 0
+# m_fire[ ,7] <- 1
+# 
+# m_fire.rural <- m_fire
+# m_fire.rural[3:5, ] <- 0
+# 
+# # create the No Fire matrix
+# m_fire.0 <- m_fire
+# m_fire.0[m_fire>0] <- 0
 
-## TESTS ##
-m_fire[,] <- 0
-m_fire[ ,7] <- 1
-
-m_fire.rural <- m_fire
-m_fire.rural[3:5, ] <- 0
-
-# create the No Fire matrix
-m_fire.0 <- m_fire
-m_fire.0[m_fire>0] <- 0
-
-
+smoke_data <- readRDS("Data/Fire/campfire_PM2.5.rds")
+smoke_data_0 <- smoke_data
+smoke_data_0$fire_PM2.5 <- 0
 
 #### 3) Run Model ####
 
  profvis({sim_no_fire <-MicroSim(n_i, n_t, 
-                        m_fire = m_fire.0,
+                        smoke_data = smoke_data_0,
                         v_asthma_state_names, 
                         pop_sample, 
                         risk_modifiers,
@@ -170,21 +149,28 @@ sim_no_fire_rerun <- reRunMicroSim("Runs/results_20230718_2032.RData")
 identical(sim_no_fire, sim_no_fire_rerun)
 
 
-# sim_fire_noIntervention <- MicroSim(v_init_asthma_states,
-#                                     n_i, n_t,
-#                                     m_fire=m_fire,
-#                                     v_asthma_state_names,
-#                                     m_individual_features,
-#                                     cycle_length,
-#                                     baseline_birth_rate, annual_birth_rate_change,
-#                                     annual_allcause_mortality_change,
-#                                     discount_rate_costs, discount_rate_qalys,
-#                                     intervention=0,
-#                                     intervention_trigger=0,
-#                                     seed = 12345,
-#                                     debug = FALSE)
-# 
-# 
+sim_fire <- MicroSim(n_i, n_t, 
+                     smoke_data = smoke_data,
+                     v_asthma_state_names, 
+                     pop_sample, 
+                     risk_modifiers,
+                     cycle_length, 
+                     baseline_birth_rate, annual_birth_rate_change, 
+                     annual_allcause_mortality_change,
+                     v_asthma_therapies,
+                     m_asthma_therapy_probs, 
+                     v_asthma_costs,
+                     v_intervention_costs,
+                     counties,
+                     county_distance_weights, 
+                     intervention_coverage = 0, 
+                     intervention_trigger = 0, 
+                     discount_rate_costs,
+                     discount_rate_qalys,
+                     seed = 12345,
+                     logger = FALSE)
+
+
 # sim_fire_universalIntervention <- MicroSim(v_init_asthma_states,
 #                                            n_i, n_t,
 #                                            m_fire=m_fire,

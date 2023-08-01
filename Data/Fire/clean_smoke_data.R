@@ -5,17 +5,23 @@
 library(dplyr)
 library(lubridate)
 library(ggplot2)
+library(tidyverse)
 
 smoke <- read.csv("Data/Fire/ad_viz_plotval_data.csv")
 
 smoke$Date <- mdy(smoke$Date)
-
+smoke <- smoke %>%
+  rename(countyfip = COUNTY_CODE)
 # Review data
-smoke[smoke$Daily.Mean.PM2.5.Concentration<=0, ] # some observations are zero or negative
+nrow(smoke[smoke$Daily.Mean.PM2.5.Concentration<=0, ]) # some observations are zero or negative
 nrow(smoke[smoke$Daily.Mean.PM2.5.Concentration<=0, ]) / nrow(smoke) 
 
 # 0.6% of observations are not acceptable. Remove them.
 smoke <- smoke %>% filter(Daily.Mean.PM2.5.Concentration > 0)
+
+smoke_abbr <- smoke %>%
+  group_by(Date, COUNTY, countyfip) %>%
+  summarize(daily_mean_PM2.5 = mean(Daily.Mean.PM2.5.Concentration))
 
 # Dates of Camp Fire
 start_date_1 <- mdy("11/08/2018") 
@@ -25,49 +31,35 @@ end_date_1 <- mdy("11/21/2018")
 start_date_2 <- mdy("09/01/2018")
 end_date_2 <- mdy("11/01/2018")
 
-# Calculate the incremental pollution from the fire
-camp <- smoke %>% filter(Date >= start_date_1, Date <= end_date_1)
-camp_avg <- camp %>%
-  group_by(COUNTY) %>%
-  summarize(camp_avg = mean(Daily.Mean.PM2.5.Concentration))
+# Calculate the incremental pollution from the fire, following the methods from Gan et al 2022
+# (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8745685/)
+## First get background pollution (i.e., median pollution during the 2 months preceding the fire)
+## Then subtract that median value from each measurement during the fire
+pre_camp <- smoke_abbr %>% filter(Date >= start_date_2, Date <= end_date_2)
 
-pre_camp <- smoke %>% filter(Date >= start_date_2, Date <= end_date_2)
-pre_camp_avg <- pre_camp %>%
-  group_by(COUNTY) %>%
-  summarize(pre_camp_avg = mean(Daily.Mean.PM2.5.Concentration))
+background_pollution <- pre_camp %>%
+  group_by(COUNTY, countyfip) %>%
+  summarize(background_PM2.5 = median(daily_mean_PM2.5))
 
-camp_avg$camp_only <- camp_avg$camp_avg - pre_camp_avg$pre_camp_avg
+camp <- smoke_abbr %>% filter(Date >= start_date_1, Date <= end_date_1)
+camp <- merge(camp, background_pollution, by = c("COUNTY","countyfip"), all.x = TRUE)
 
+camp <- camp %>%
+  mutate(fire_PM2.5 = daily_mean_PM2.5 - background_PM2.5)  
 
-# Visualize data to see trends
-ggplot(camp_avg, aes(x = Date, y = camp_only, color = COUNTY)) +
-  geom_point() +
-  labs(x = "Date", y = "PM2.5 Concentration", color = "County") +
-  scale_x_date(date_labels = "%Y-%m-%d", date_breaks = "1 week") +
-  theme_minimal()
+# 66 rows (10%) took on negative PM2.5 values. Most of them are counties not affected
+# Some seem to be measurement errors. Recode all as 0 (no fire effect).
 
-ggplot(smoke_no_outliers_tukey, aes(x = COUNTY, y = Daily.Mean.PM2.5.Concentration)) +
-  geom_boxplot() +
-  labs(x = "County", y = "PM2.5 Concentration") +
-  theme_minimal()
+camp$fire_PM2.5[camp$fire_PM2.5<0] <- 0
 
-# PM2.5 elevated only until 11/21/2018. Re-filter dataset and rerun scatterplot
-end_date <- mdy("11/21/2018")
-campsmoke <- campsmoke %>% filter(Date >= start_date, Date <= end_date)
+camp <- arrange(camp, countyfip, Date)
 
-# Note: Do we want to only include counties above a certain PM2.5 concentration? 
-# (i.e., to filter out counties that weren't affected from the fire?)
-
-observation_count <- count(campsmoke, COUNTY)
-
-avg_daily_pollution <- campsmoke %>%
-  group_by(COUNTY) %>%
-  summarize(average_concentration = mean(Daily.Mean.PM2.5.Concentration))
-
-ggplot(avg_daily_pollution, aes(x = COUNTY, y = average_concentration)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  labs(x = "County", y = "Average Concentration") +
-  theme_minimal() +
-  coord_flip()
-
-saveRDS(avg_daily_pollution, "Data/Fire/smokedata.RDS")
+saveRDS(camp, "Data/Fire/campfire_PM2.5.RDS")
+#   
+# ## Now we need to calculate number of days where daily PM2.5 > 35 ug/m3 
+# smoke_exposure <- camp %>%
+#   filter(fire_PM2.5 > 35) %>%
+#   group_by(COUNTY, COUNTY_CODE) %>%
+#   summarize(days_exposed = n())
+ 
+# saveRDS(smoke_exposure, "Data/Fire/campfire_exposure.RDS")

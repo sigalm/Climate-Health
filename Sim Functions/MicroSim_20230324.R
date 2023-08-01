@@ -1,6 +1,6 @@
 MicroSim <- function(n_i,
                      n_t,
-                     m_fire,
+                     smoke_data,
                      v_asthma_state_names,
                      pop_sample,
                      risk_modifiers, 
@@ -73,6 +73,11 @@ MicroSim <- function(n_i,
   v_death_rate_adjusters <- (1+annual_allcause_mortality_change)^(0:n_t)         # calculate death rate adjuster per cycle
   
   # initialize matrices to capture fires, health states, costs, and health outcomes each cycle:
+  
+  m_fire <- smoke_data %>%
+      filter(fire_PM2.5 > 35) %>%
+      group_by(COUNTY, countyfip) %>%
+      summarize(days_exposed = n())
   
   m_asthma_states <- 
     m_intervention_receipt <- 
@@ -177,7 +182,6 @@ MicroSim <- function(n_i,
       m_asthma_healthcare_use[i, t+1] <- 
         sample(v_healthcare_use, size = 1,
                prob = m_asthma_healthcare_use_probs[m_asthma_states[i,t+1], ])
-
       
       
       # Determine new therapy if therapy changed
