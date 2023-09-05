@@ -12,8 +12,6 @@ MicroSim <- function(n_i,
                      m_asthma_therapy_probs, 
                      v_asthma_costs,
                      v_intervention_costs,
-                     counties,
-                     county_distance_weights, 
                      intervention_coverage, 
                      intervention_trigger, 
                      discount_rate_costs,
@@ -36,7 +34,7 @@ MicroSim <- function(n_i,
       parameters = list(
         n_i = n_i,
         n_t = n_t,
-        m_fire = m_fire,
+        smoke_data = smoke_data,
         v_asthma_state_names = v_asthma_state_names,
         pop_sample = pop_sample,
         risk_modifiers = risk_modifiers,
@@ -48,8 +46,6 @@ MicroSim <- function(n_i,
         m_asthma_therapy_probs = m_asthma_therapy_probs,
         v_asthma_costs = v_asthma_costs,
         v_intervention_costs = v_intervention_costs,
-        counties = counties,
-        county_distance_weights = county_distance_weights,
         intervention_coverage = intervention_coverage,
         intervention_trigger = intervention_trigger,
         discount_rate_costs = discount_rate_costs,
@@ -74,10 +70,7 @@ MicroSim <- function(n_i,
   
   # initialize matrices to capture fires, health states, costs, and health outcomes each cycle:
   
-  m_fire <- smoke_data %>%
-      filter(fire_PM2.5 > 35) %>%
-      group_by(COUNTY, countyfip) %>%
-      summarize(days_exposed = n())
+  m_fire <- smoke_data
   
   m_asthma_states <- 
     m_intervention_receipt <- 
@@ -119,7 +112,7 @@ MicroSim <- function(n_i,
   v_total_pop  <- rep(NA, n_t+1)                                                 # vector to track population size over each cycle
   v_total_pop[1] <- n_i
   
-  log_output(record_run, 
+  log_output(100, 
              paste0("Starting simulation for n_i = ", n_i, 
                     " and n_t = ", n_t, "."), log_file)
   
@@ -132,21 +125,16 @@ MicroSim <- function(n_i,
     for (i in 1:n_i) {
       
       set.seed(seed+i*79+t*71)                                                   # set seed for every individual
-      county_index <- match(pop_sample$countyfip[i], counties)                   # get neighborhood number of individual i
-      
       
       # determine if individual gets intervention
-      # if a fire happened in their neighborhood, or if the total exposure to
-      # nearby fires is above a given threshold, they MAY receive intervention 
+      # exposed to smoke in the past week, they MAY receive intervention 
       # (based on intervention_coverage)
       
-      fire_it <- m_fire[county_index, t]
-      exposure_it <- sum(m_fire[ ,t] * 
-                           county_distance_weights[ ,county_index])    
-
-      set.seed(seed+i*79+t*71) 
+      fire_it <- as.integer(m_fire[m_fire$countyfip==pop_sample[i, "countyfip"], t+1])
+      fire_it_lag1 <- as.integer(m_fire[m_fire$countyfip==pop_sample[i, "countyfip"], t]) + fire_it
+      
       if (intervention_coverage>0 & 
-          (fire_it==1 | exposure_it>=intervention_trigger)) {
+          (fire_it == 1)) {
         m_intervention_receipt[i,t+1] <- 
           rbinom(n=1, size=1, prob=intervention_coverage)
       } else {
@@ -167,6 +155,7 @@ MicroSim <- function(n_i,
                        v_asthma_state_names = v_asthma_state_names,
                        x_i = pop_sample[i, ], 
                        fire_it = fire_it, 
+                       fire_it_lag1 = fire_it_lag1,
                        intervention_coverage_it = m_intervention_receipt[i,t],
                        death_rate_t = v_death_rate_adjusters[t],
                        record_run = record_run)
@@ -243,55 +232,48 @@ MicroSim <- function(n_i,
       pop_sample$age[i] <- 
         pop_sample$age[i] + cycle_length                              # increase age by cycle length
       
-      # if there has been a fire in their neighborhood, set exposure 
-      # history to TRUE, otherwise keep the same
-      
-      if (m_fire[county_index, t]==1) {
-        pop_sample$exposure[i] <-  TRUE
-      }               
-      
-      
-      # if individual is not Dead, determine # of kids born in year t
-      if (m_asthma_states[i,t+1] != "50" & m_asthma_states[i, t+1] != "100") {
-        set.seed(seed+i*79+t*71) 
-        kids_it <- rpois(1, v_birth_rates[t])                                    # determine if individual i had children and how many using a 
-        # Poisson distribution with probability being the birth rate 
-        # at time t
-        
-        # if individual i had children, assign characteristics to child 
-        # and add new row to pop_sample
-        
-        if (kids_it > 0) {
-          log_output(record_run, sprintf("Individual=%s had a kid at t=%s", i, t))
-          for (kid in 1:kids_it) {
-            new_x <- c(as.numeric(pop_sample[nrow(pop_sample), 'id'] + 1), # get last ID in population and add 1
-                       as.numeric(0),                                                     # age is 0
-                       as.integer(rbinom(1,1,0.55)),                                      # sex (0=male, 1=female) based on binomial distribution with p=0.55 for female
-                       as.logical(ifelse(m_fire[county_index, t]==1, TRUE, FALSE)), # exposure is TRUE if fire happened that year
-                       as.integer(pop_sample$rural[i]),                        # same rural/urban designation as parent
-                       as.character("NoTx"),                                              # define asthma care (none because no asthma at birth)
-                       as.numeric(pop_sample$countyfip[i]),                 # same neighborhood as parent
-                       as.integer(pop_sample$fam_id[i]))                       # same family as parent
-            pop_sample <- rbind(pop_sample, new_x)                  # add the above as new row to pop_sample, matrix of individuals and risk factors
-            
-            
-            # assign a health state, initial costs, and initial QALYs 
-            # to the newborn
-            
-            new_M <- new_I <- new_T <-new_C <- new_E <- rep(NA,n_t+1)
-            new_M[t+1] <- 0                                                      # Add initial health state of new child to m_asthma_states (age of onset is 5, so no asthma when born)
-            m_asthma_states <- rbind(m_asthma_states, new_M)
-            new_C[t+1] <- Costs(M_it=new_M[t+1], 
-                                intervention_coverage = intervention_coverage)
-            m_costs <- rbind(m_costs, new_C)
-            new_E[t+1] <- Effs(M_it=new_M[t+1], x_i=new_x)
-            m_qalys <- rbind(m_qalys, new_E)
-            m_intervention_receipt <- rbind(m_intervention_receipt, new_I)
-            m_asthma_therapies <- rbind(m_asthma_therapies, new_T) 
-          }
-        }  
-        total_births_t <- total_births_t + kids_it                               # calculate total number of births in cycle t
-      } # close if statement for kids
+     
+      # # if individual is not Dead, determine # of kids born in year t
+      # if (m_asthma_states[i,t+1] != "50" & m_asthma_states[i, t+1] != "100") {
+      #   set.seed(seed+i*79+t*71) 
+      #   kids_it <- rpois(1, v_birth_rates[t])                                    # determine if individual i had children and how many using a 
+      #   # Poisson distribution with probability being the birth rate 
+      #   # at time t
+      #   
+      #   # if individual i had children, assign characteristics to child 
+      #   # and add new row to pop_sample
+      #   
+      #   if (kids_it > 0) {
+      #     log_output(record_run, sprintf("Individual=%s had a kid at t=%s", i, t))
+      #     for (kid in 1:kids_it) {
+      #       new_x <- c(as.numeric(pop_sample[nrow(pop_sample), 'id'] + 1), # get last ID in population and add 1
+      #                  as.numeric(0),                                                     # age is 0
+      #                  as.integer(rbinom(1,1,0.55)),                                      # sex (0=male, 1=female) based on binomial distribution with p=0.55 for female
+      #                  as.logical(ifelse(m_fire[m_fire$countyfip==pop_sample[i, "countyfip"], t]==1, TRUE, FALSE)), # exposure is TRUE if fire happened that year
+      #                  as.integer(pop_sample$rural[i]),                        # same rural/urban designation as parent
+      #                  as.character("NoTx"),                                              # define asthma care (none because no asthma at birth)
+      #                  as.numeric(pop_sample$countyfip[i]),                 # same neighborhood as parent
+      #                  as.integer(pop_sample$fam_id[i]))                       # same family as parent
+      #       pop_sample <- rbind(pop_sample, new_x)                  # add the above as new row to pop_sample, matrix of individuals and risk factors
+      #       
+      #       
+      #       # assign a health state, initial costs, and initial QALYs 
+      #       # to the newborn
+      #       
+      #       new_M <- new_I <- new_T <-new_C <- new_E <- rep(NA,n_t+1)
+      #       new_M[t+1] <- 0                                                      # Add initial health state of new child to m_asthma_states (age of onset is 5, so no asthma when born)
+      #       m_asthma_states <- rbind(m_asthma_states, new_M)
+      #       new_C[t+1] <- Costs(M_it=new_M[t+1], 
+      #                           intervention_coverage = intervention_coverage)
+      #       m_costs <- rbind(m_costs, new_C)
+      #       new_E[t+1] <- Effs(M_it=new_M[t+1], x_i=new_x)
+      #       m_qalys <- rbind(m_qalys, new_E)
+      #       m_intervention_receipt <- rbind(m_intervention_receipt, new_I)
+      #       m_asthma_therapies <- rbind(m_asthma_therapies, new_T) 
+      #     }
+      #   }  
+      #   total_births_t <- total_births_t + kids_it                               # calculate total number of births in cycle t
+      # } # close if statement for kids
       
     }  # close loop for individuals
     
@@ -304,7 +286,7 @@ MicroSim <- function(n_i,
   
   # ================= SIMULATION LOOP END ================
   
-  log_output(record_run, "Simulation complete. Preparing results.", log_file)
+  log_output(100, "Simulation complete. Preparing results.", log_file)
   
   tc <- m_costs %*% v_discount_weights_costs                                     # total discounted costs per individual
   te <- (m_qalys * cycle_length) %*% v_discount_weights_qalys                    # total discounted QALYs per individual
@@ -322,6 +304,11 @@ MicroSim <- function(n_i,
   colnames(TR_proportion) <- v_asthma_state_names
   rownames(TR_proportion) <- paste("cycle", 0:n_t)
   
+  TR_healthcare_use <- t(apply(m_asthma_healthcare_use, 2, function(x) 
+    table(factor(x, levels = v_healthcare_use, ordered = TRUE)))) / v_total_pop
+  colnames(TR_healthcare_use) <- v_healthcare_use
+  rownames(TR_healthcare_use) <- paste("cycle", 0:n_t)
+  
   
   # return outputs as a list
   
@@ -338,14 +325,15 @@ MicroSim <- function(n_i,
     te_hat = te_hat,
     pop_sample_end = pop_sample, 
     TR_absolute = TR_absolute,
-    TR_proportion = TR_proportion, 
+    TR_proportion = TR_proportion,
+    TR_healthcare_use = TR_healthcare_use,
     tx_tracker = tx_tracker
     )
   
   
   end_time <- Sys.time()
   
-  log_output(record_run, 
+  log_output(100, 
              paste0("Results saved. Total run time: ", 
                     difftime(end_time, start_time)), log_file)
   
@@ -390,8 +378,6 @@ reRunMicroSim <- function(results_file) {
     m_asthma_therapy_probs = parameters$m_asthma_therapy_probs,
     v_asthma_costs = parameters$v_asthma_costs,
     v_intervention_costs = parameters$v_intervention_costs,
-    counties = parameters$counties,
-    county_distance_weights = parameters$county_distance_weights,
     intervention_coverage = parameters$intervention_coverage,
     intervention_trigger = parameters$intervention_trigger,
     discount_rate_costs = parameters$discount_rate_costs,

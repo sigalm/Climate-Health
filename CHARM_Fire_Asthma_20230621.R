@@ -3,16 +3,25 @@
 # ================================
 rm(list = ls()) # remove any variables in R's memory
 
-setwd("C:/Users/alkin/Desktop/sigal sim/Climate-Health")
+# setwd("C:/Users/alkin/Desktop/sigal sim/Climate-Health")
 source("Sim Functions/MicroSim_20230324.R")
 source("Sim Functions/Probs2.R")
 source("Sim Functions/Costs.R")
 source("Sim Functions/Effs.R")
 source("Sim Functions/multisheet2array.R")
 source("Sim Functions/logging.R")
+source("Sim Functions/Tables_Figures.R")
 library(readxl)
 library(dplyr)
 library(profvis)
+library(ggplot2)
+library(reshape2)
+library(scales)
+library(RColorBrewer)
+library(ggthemes)
+library(knitr)
+library(gridExtra)
+
 
 
 ##################
@@ -21,8 +30,8 @@ library(profvis)
 #### 1) Population Inputs ####
 #### Structural parameters ####
 
-n_i <- 5000                              # number of individuals
-n_t <- 10                             # time horizon (cycles)
+n_i <- 1000                              # number of individuals
+n_t <- 20                           # time horizon (cycles)
 cycle_length <- 1/52                  # length of each cycle (in years)
 
 v_asthma_state_names <- c("0",        # No asthma 
@@ -42,8 +51,13 @@ n_asthma_states <- length(v_asthma_state_names)                                 
 # Read in microdata and extract subset
 full_pop <- readRDS("Data/Microdata/microdata.rds")
 set.seed(123)
-pop_sample <- full_pop[sample(nrow(full_pop), size = n_i), ]
-pop_sample$id <- 1:n_i                                                             # add ID numbers
+asthma_pop <- subset(full_pop, subset=asthma_status>0)
+
+# pop_sample <- full_pop[sample(nrow(full_pop), size = n_i), ]
+#pop_sample$id <- 1:n_i                                                             # add ID numbers
+
+# Get list of counties and fips codes
+counties <- read.csv("Data/Microdata/counties.csv")
 
 
 discount_rate_costs <- discount_rate_qalys <- 0.0                                # 3% discount rate for both costs and QALYs (0 for biweekly cycycle_lengthes up to a year)
@@ -101,29 +115,22 @@ v_asthma_hsu <- c(1,         # 0 (no asthma)
 
 #### 2) Climate Data ####
 
-# m_fire <- readRDS("Data/Fire/archive/fire_data_28apr2023.rds")
-# 
-# ## TESTS ##
-# m_fire[,] <- 0
-# m_fire[ ,7] <- 1
-# 
-# m_fire.rural <- m_fire
-# m_fire.rural[3:5, ] <- 0
-# 
-# # create the No Fire matrix
-# m_fire.0 <- m_fire
-# m_fire.0[m_fire>0] <- 0
-
-smoke_data <- readRDS("Data/Fire/campfire_PM2.5.rds")
+smoke_data <- readRDS("Data/Fire/smoke_per_cycle.rds")
 smoke_data_0 <- smoke_data
-smoke_data_0$fire_PM2.5 <- 0
+smoke_data_0[,-ncol(smoke_data)] <- 0
+
+fire_counties <- smoke_data$countyfip[smoke_data$Cycle_1 != 0 | smoke_data$Cycle_2 != 0]
+asthma_fire_pop <- subset(asthma_pop, subset=countyfip %in% fire_counties)
+asthma_fire_sample <- asthma_fire_pop[sample(nrow(asthma_fire_pop), size = n_i), ]
+asthma_fire_sample$id <- 1:n_i
 
 #### 3) Run Model ####
 
- profvis({sim_no_fire <-MicroSim(n_i, n_t, 
+# profvis({
+   sim_no_fire <-MicroSim(n_i, n_t, 
                         smoke_data = smoke_data_0,
                         v_asthma_state_names, 
-                        pop_sample, 
+                        asthma_fire_sample, 
                         risk_modifiers,
                         cycle_length, 
                         baseline_birth_rate, annual_birth_rate_change, 
@@ -132,15 +139,17 @@ smoke_data_0$fire_PM2.5 <- 0
                         m_asthma_therapy_probs, 
                         v_asthma_costs,
                         v_intervention_costs,
-                        counties,
-                        county_distance_weights, 
                         intervention_coverage = 0, 
                         intervention_trigger = 0, 
                         discount_rate_costs,
                         discount_rate_qalys,
                         seed = 12345,
                         record_run = FALSE,
-                        description="Asthma Sim No Fire")})
+                        description="Asthma Sim No Fire New Smoke Data")
+#})
+
+result1_figure <- make_figures(sim_no_fire, "Health states over time, no fire")
+
 
 sim_no_fire_rerun <- reRunMicroSim("Runs/results_20230718_2032.RData")
 
@@ -152,7 +161,7 @@ identical(sim_no_fire, sim_no_fire_rerun)
 sim_fire <- MicroSim(n_i, n_t, 
                      smoke_data = smoke_data,
                      v_asthma_state_names, 
-                     pop_sample, 
+                     pop_sample = asthma_fire_sample, 
                      risk_modifiers,
                      cycle_length, 
                      baseline_birth_rate, annual_birth_rate_change, 
@@ -161,15 +170,15 @@ sim_fire <- MicroSim(n_i, n_t,
                      m_asthma_therapy_probs, 
                      v_asthma_costs,
                      v_intervention_costs,
-                     counties,
-                     county_distance_weights, 
                      intervention_coverage = 0, 
                      intervention_trigger = 0, 
                      discount_rate_costs,
                      discount_rate_qalys,
                      seed = 12345,
-                     logger = FALSE)
+                     record_run = FALSE,
+                     description = "Asthma Sim With Fire and Lag")
 
+result_figure <- make_figures(sim_fire, "Health states over time, smoke in cycles 1-3", 1)
 
 # sim_fire_universalIntervention <- MicroSim(v_init_asthma_states,
 #                                            n_i, n_t,

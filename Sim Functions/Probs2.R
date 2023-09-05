@@ -9,7 +9,8 @@ Probs <- function(M_it,                           # health state occupied by ind
                   risk_modifiers,                 # 3D object containing effect sizes for risk factors
                   v_asthma_state_names,           # vector of asthma health state names
                   x_i,                            # individual characteristics of individual i (row i of m_individual characteristics)
-                  fire_it,                        # fire experience of individual i at cycle t (binary)
+                  fire_it,                        # smoke experience of individual i at cycle t (count)
+                  fire_it_lag1,                  # smoke experience of individual i at cycle t-1 (count)
                   intervention_coverage_it,       # intervention receipt of individual i at cycle t (binary)
                   death_rate_t,
                   record_run = FALSE) {                 # death rate adjuster for cycle t
@@ -20,27 +21,29 @@ Probs <- function(M_it,                           # health state occupied by ind
   names(v_probs_it) <- v_asthma_state_names
   
   
-  # Create a matrix where each row contains the individual's risk factors 
+  # Create a vector where each row contains the individual's risk factors 
   # for each health state
-  risk_factors_matrix <- cbind(age_it <- 
-                                 x_i$age >= risk_modifiers[from_state, 
-                                                           v_asthma_state_names, 
-                                                           "age_threshold"],
-                               sex_it <- x_i$sex,
+  age_it_cat <- c(x_i$age < 5,
+                  x_i$age >= 5 & x_i$age < 18,
+                  x_i$age >= 18 & x_i$age < 55,
+                  x_i$age >= 55)
+  
+  risk_factors_matrix <- c(age_it_cat,
+                               x_i$sex,
                                fire_it,
+                               fire_it_lag1,
                                intervention_coverage_it)
   
   # Extract the risk ratios for the appropriate transition probabilities
-  risk_ratios_matrix <- risk_modifiers[from_state, v_asthma_state_names, 3:6]
+  risk_ratios_matrix <- risk_modifiers[from_state, v_asthma_state_names, -1]
   
   # Calculate probability adjustment factor encompassing all risk factors
-  v_prob_modifiers <- apply(
-    risk_factors_matrix * risk_ratios_matrix + (1 - risk_factors_matrix), 
-    1, prod)
+  v_probs_it <- v_probs_it * apply((risk_ratios_matrix ^ risk_factors_matrix), 
+                                   1, prod)
   
-  # Calculated adjusted probabilities vector
-  v_probs_it <- pmin(v_probs_it * v_prob_modifiers, 1)
-  
+  # # Calculated adjusted probabilities vector
+  # v_probs_it <- pmin(v_probs_it * v_prob_modifiers, 1)
+  # 
   
   # update the probability of all-cause mortality (changes over time) 
   # with the adjuster at time t
