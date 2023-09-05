@@ -30,8 +30,8 @@ library(gridExtra)
 #### 1) Population Inputs ####
 #### Structural parameters ####
 
-n_i <- 1000                              # number of individuals
-n_t <- 20                           # time horizon (cycles)
+n_i <- 2000                              # number of individuals
+n_t <- 8                          # time horizon (cycles)
 cycle_length <- 1/52                  # length of each cycle (in years)
 
 v_asthma_state_names <- c("0",        # No asthma 
@@ -55,7 +55,9 @@ asthma_pop <- subset(full_pop, subset=asthma_status>0)
 
 # pop_sample <- full_pop[sample(nrow(full_pop), size = n_i), ]
 #pop_sample$id <- 1:n_i                                                             # add ID numbers
-
+# 
+# asthma_sample <- asthma_pop[sample(nrow(asthma_pop), size = n_i), ]
+# asthma_sample$id <- 1:n_i
 # Get list of counties and fips codes
 counties <- read.csv("Data/Microdata/counties.csv")
 
@@ -86,7 +88,7 @@ annual_allcause_mortality_change <- 0                                           
 # Transition probabilities and risk modifiers (stored in a 3-dimensional array with risk factors along the z-axis)
 
 risk_modifiers <- multisheet2array(
-  path = "Data/Asthma/Transition probabilities/transition data _ weekly.xlsx", 
+  path = "Data/Asthma/Transition probabilities/transition data_weekly_recalibrate.xlsx", 
   range=("B1:I9"), x_names = v_asthma_state_names, y_names = v_asthma_state_names)
 
 
