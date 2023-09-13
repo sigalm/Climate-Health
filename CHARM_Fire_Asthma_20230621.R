@@ -30,7 +30,7 @@ library(gridExtra)
 #### 1) Population Inputs ####
 #### Structural parameters ####
 
-n_i <- 2000                              # number of individuals
+n_i <- 5000                              # number of individuals
 n_t <- 8                          # time horizon (cycles)
 cycle_length <- 1/52                  # length of each cycle (in years)
 
@@ -88,7 +88,7 @@ annual_allcause_mortality_change <- 0                                           
 # Transition probabilities and risk modifiers (stored in a 3-dimensional array with risk factors along the z-axis)
 
 risk_modifiers <- multisheet2array(
-  path = "Data/Asthma/Transition probabilities/transition data_weekly_recalibrate.xlsx", 
+  path = "Data/Asthma/Transition probabilities/transition data _ weekly _ recalibrate2.xlsx", 
   range=("B1:I9"), x_names = v_asthma_state_names, y_names = v_asthma_state_names)
 
 
@@ -129,7 +129,7 @@ asthma_fire_sample$id <- 1:n_i
 #### 3) Run Model ####
 
 # profvis({
-   sim_no_fire <-MicroSim(n_i, n_t, 
+   sim_no_fire2 <-MicroSim(n_i, n_t, 
                         smoke_data = smoke_data_0,
                         v_asthma_state_names, 
                         asthma_fire_sample, 
@@ -145,22 +145,29 @@ asthma_fire_sample$id <- 1:n_i
                         intervention_trigger = 0, 
                         discount_rate_costs,
                         discount_rate_qalys,
+                        min_residual = 0,
                         seed = 12345,
-                        record_run = FALSE,
-                        description="Asthma Sim No Fire New Smoke Data")
+                        record_run = TRUE,
+                        description="Asthma Sim No Fire 0% Min Residual Probability")
 #})
 
-result1_figure <- make_figures(sim_no_fire, "Health states over time, no fire")
+fig_no_resid <- make_figures(sim_no_fire2, "Health states over time, min_residual=0")
+fig_0.1_resid <- make_figures(sim_no_fire, "Health states over time, min_residual=0.1")
 
 
-sim_no_fire_rerun <- reRunMicroSim("Runs/results_20230718_2032.RData")
+sim_no_fire_rerun <- reRunMicroSim("Runs/results_20230912_1723.RData")
 
 
 
-identical(sim_no_fire, sim_no_fire_rerun)
+identical(sim_no_fire, sim_no_fire2)
 
+sample1 <- asthma_fire_sample[asthma_fire_sample$asthma_status == "5", ]
+sample1$id <- 1:nrow(sample1)
 
-sim_fire <- MicroSim(n_i, n_t, 
+risk_modifiers2 <- risk_modifiers
+risk_modifiers2[risk_modifiers2 == 1.049] <- 2
+
+sim_fire_0.1_resid <- MicroSim(n_i, n_t, 
                      smoke_data = smoke_data,
                      v_asthma_state_names, 
                      pop_sample = asthma_fire_sample, 
@@ -176,74 +183,12 @@ sim_fire <- MicroSim(n_i, n_t,
                      intervention_trigger = 0, 
                      discount_rate_costs,
                      discount_rate_qalys,
+                     min_residual = 0.1,
                      seed = 12345,
                      record_run = FALSE,
-                     description = "Asthma Sim With Fire and Lag")
+                     description = "Asthma Sim With Fire and Lag 10% Min Resid")
 
-result_figure <- make_figures(sim_fire, "Health states over time, smoke in cycles 1-3", 1)
+n_t <- 20
+figure_no_resid <- make_figures(sim_fire_no_resid, "No residual", 1)
+figure_0.1_resid <- make_figures(sim_fire_0.1_resid, "10% min residual", 1)
 
-# sim_fire_universalIntervention <- MicroSim(v_init_asthma_states,
-#                                            n_i, n_t,
-#                                            m_fire=m_fire,
-#                                            v_asthma_state_names,
-#                                            m_individual_features,
-#                                            cycle_length,
-#                                            baseline_birth_rate, annual_birth_rate_change,
-#                                            annual_allcause_mortality_change,
-#                                            discount_rate_costs, discount_rate_qalys,
-#                                            intervention=1,
-#                                            intervention_trigger=1,
-#                                            seed = 12345,
-#                                            debug = FALSE)
-# 
-# 
-# sim_fire_50percentIntervention <- MicroSim(v_init_asthma_states,
-#                                            n_i, n_t,
-#                                            m_fire=m_fire,
-#                                            v_asthma_state_names,
-#                                            m_individual_features,
-#                                            cycle_length,
-#                                            baseline_birth_rate, annual_birth_rate_change,
-#                                            annual_allcause_mortality_change,
-#                                            discount_rate_costs, discount_rate_qalys,
-#                                            intervention=0.5,
-#                                            intervention_trigger=1,
-#                                            seed = 12345,
-#                                            debug = FALSE)
-# 
-# 
-# 
-# sim_ruralfire_universalIntervention <- MicroSim(v_init_asthma_states,
-#                                                 n_i, n_t,
-#                                                 m_fire=m_fire.rural,
-#                                                 v_asthma_state_names,
-#                                                 m_individual_features,
-#                                                 cycle_length,
-#                                                 baseline_birth_rate, annual_birth_rate_change,
-#                                                 annual_allcause_mortality_change,
-#                                                 discount_rate_costs, discount_rate_qalys,
-#                                                 intervention=1,
-#                                                 intervention_trigger=1,
-#                                                 seed = 12345,
-#                                                 debug = FALSE)
-# 
-# 
-# sim_ruralfire_50percentIntervention <- MicroSim(v_init_asthma_states,
-#                                                 n_i, n_t,
-#                                                 m_fire=m_fire.rural,
-#                                                 v_asthma_state_names,
-#                                                 m_individual_features,
-#                                                 cycle_length,
-#                                                 baseline_birth_rate, annual_birth_rate_change,
-#                                                 annual_allcause_mortality_change,
-#                                                 discount_rate_costs, discount_rate_qalys,
-#                                                 intervention=0.5,
-#                                                 intervention_trigger=1,
-#                                                 seed = 12345,
-#                                                 debug = FALSE)
-# 
-# 
-# 
-# 
-# 
-# 

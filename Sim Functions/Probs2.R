@@ -12,8 +12,9 @@ Probs <- function(M_it,                           # health state occupied by ind
                   fire_it,                        # smoke experience of individual i at cycle t (count)
                   fire_it_lag1,                  # smoke experience of individual i at cycle t-1 (count)
                   intervention_coverage_it,       # intervention receipt of individual i at cycle t (binary)
-                  death_rate_t,
-                  record_run = FALSE) {                 # death rate adjuster for cycle t
+                  death_rate_t,                   # death rate adjuster for cycle t
+                  min_residual = 0,
+                  record_run = FALSE) {                 
 
   # Setup
   from_state = as.character(M_it)
@@ -28,11 +29,11 @@ Probs <- function(M_it,                           # health state occupied by ind
                   x_i$age >= 18 & x_i$age < 55,
                   x_i$age >= 55)
   
-  risk_factors_matrix <- c(age_it_cat,
+  risk_factors_matrix <- matrix(rep(c(age_it_cat,
                                x_i$sex,
                                fire_it,
                                fire_it_lag1,
-                               intervention_coverage_it)
+                               intervention_coverage_it), each=8), nrow = 8)
   
   # Extract the risk ratios for the appropriate transition probabilities
   risk_ratios_matrix <- risk_modifiers[from_state, v_asthma_state_names, -1]
@@ -51,9 +52,15 @@ Probs <- function(M_it,                           # health state occupied by ind
   v_probs_it['100'] = v_probs_it['100']*death_rate_t     
   
   # calculate the "stay put" probability as 1 minus the rest
-  v_probs_it[from_state] = 1-sum(v_probs_it[-which(names(v_probs_it) == from_state)])            
-  
-  
+  v_probs_it[from_state] = 1-sum(v_probs_it[-which(names(v_probs_it) == from_state)]) 
+
+  if (v_probs_it[from_state]<0) {
+    scaling_factor <- (1-min_residual) / sum(v_probs_it[-which(names(v_probs_it) == from_state)])
+    v_probs_it <- v_probs_it * scaling_factor
+    v_probs_it[from_state] <- min_residual
+  }
+
+
   # test for errors
   
   if (any(is.na(v_probs_it))) {

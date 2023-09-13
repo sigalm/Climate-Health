@@ -16,6 +16,7 @@ MicroSim <- function(n_i,
                      intervention_trigger, 
                      discount_rate_costs,
                      discount_rate_qalys,
+                     min_residual = 0,
                      seed = 1, 
                      record_run = TRUE,
                      description = "This is an asthma simulation"
@@ -51,6 +52,7 @@ MicroSim <- function(n_i,
         discount_rate_costs = discount_rate_costs,
         discount_rate_qalys = discount_rate_qalys,
         seed = seed,
+        min_residual = min_residual,
         record_run = record_run,
         description = description
       )
@@ -158,6 +160,7 @@ MicroSim <- function(n_i,
                        fire_it_lag1 = fire_it_lag1,
                        intervention_coverage_it = m_intervention_receipt[i,t],
                        death_rate_t = v_death_rate_adjusters[t],
+                       min_residual = min_residual,
                        record_run = record_run)
       log_output(1, sprintf("   Probs calculated i=%s in" , i), log_file)
       
@@ -366,7 +369,7 @@ reRunMicroSim <- function(results_file) {
   MicroSim(
     n_i = parameters$n_i,
     n_t = parameters$n_t,
-    m_fire = parameters$m_fire,
+    smoke_data = parameters$smoke_data,
     v_asthma_state_names = parameters$v_asthma_state_names,
     pop_sample = parameters$pop_sample,
     risk_modifiers = parameters$risk_modifiers,
@@ -383,6 +386,7 @@ reRunMicroSim <- function(results_file) {
     discount_rate_costs = parameters$discount_rate_costs,
     discount_rate_qalys = parameters$discount_rate_qalys,
     seed = parameters$seed,
+    min_residual = parameters$min_residual,
     record_run = parameters$record_run,
     description = parameters$description
   )
