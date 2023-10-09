@@ -76,25 +76,16 @@ MicroSim <- function(n_i,
   
   m_asthma_states <- 
     m_intervention_receipt <- 
-    m_asthma_therapies <-  
-    m_costs <- m_qalys <- 
+    m_asthma_therapies <-
     m_asthma_healthcare_use <- 
     matrix(nrow=n_i, ncol=n_t+1, dimnames = list(paste("ind", 1:n_i), 
                                                  paste("cycle",0:n_t))) 
   
-  m_intervention_receipt[ ,1] <- 0                                               # initial intervention: none
+  m_intervention_receipt[ ,1] <- 0      # initial intervention: none
   
-  m_asthma_therapies[ ,1] <- pop_sample$asthma_therapy                    # initial asthma management: pulled from individual data
+  m_asthma_therapies[ ,1] <- pop_sample$asthma_therapy  # initial asthma management: pulled from individual data
   
-  m_asthma_states[ ,1] <- pop_sample$asthma_status                                  # initial health states: pulled from data
-  
-  m_costs[ ,1] <-  Costs(v_asthma_costs = v_asthma_costs, 
-                         M_it = m_asthma_states[ , 1],
-                         v_asthma_state_names = v_asthma_state_names, 
-                         intervention_it = m_intervention_receipt[ ,1], 
-                         v_intervention_costs = v_intervention_costs)
-  
-  m_qalys[ ,1] <- Effs(M_it=m_asthma_states[ ,1], x_i=pop_sample)     # initial QALYs: calculated from health state and individual data
+  m_asthma_states[ ,1] <- pop_sample$asthma_status      # initial health states: pulled from data
   
   m_asthma_healthcare_use[ ,1] <- "none"
   
@@ -104,12 +95,11 @@ MicroSim <- function(n_i,
   
   
   # assign start time to each individual for the therapy at initialization
-  
-  
+
   for (i in 1:n_i) {
     tx <-  pop_sample[i, "asthma_therapy"]                                # find what therapy they're on
     tx_tracker[tx_tracker$id==i & tx_tracker$tx==tx, ]$tx_start <- 0             # note start time 0 for that individual-treatment row
-  }  
+  }
   
   v_total_pop  <- rep(NA, n_t+1)                                                 # vector to track population size over each cycle
   v_total_pop[1] <- n_i
@@ -219,19 +209,7 @@ MicroSim <- function(n_i,
       } else {                                                                   # otherwise keep using the same therapy
         m_asthma_therapies[i, t+1] <- m_asthma_therapies[i,t]
       }
-      
-      # estimate costs for individual i at cycle t+1
-      m_costs[i, t+1] <- Costs(v_asthma_costs = v_asthma_costs, 
-                               M_it = m_asthma_states[i, t+1],
-                               v_asthma_state_names = v_asthma_state_names, 
-                               intervention_it = m_intervention_receipt[i,t+1], 
-                               v_intervention_costs = v_intervention_costs)
-      
-      
-      # estimate QALYs for individual i at cycle t+1
-      m_qalys[i, t+1] <- Effs(M_it = m_asthma_states[i, t+1], 
-                              x_i=pop_sample[i, ])                    
-      
+
       pop_sample$age[i] <- 
         pop_sample$age[i] + cycle_length                              # increase age by cycle length
       
@@ -290,6 +268,14 @@ MicroSim <- function(n_i,
   # ================= SIMULATION LOOP END ================
   
   log_output(100, "Simulation complete. Preparing results.", log_file)
+  
+  
+  m_costs <- sapply(as.data.frame(m_asthma_states), function(col) v_asthma_costs[col])
+  # add intervention cost
+  rownames(m_costs) <- paste("ind", 1:n_i)
+  m_qalys <- sapply(as.data.frame(m_asthma_states), function(col) v_asthma_hsu[col])
+  rownames(m_qalys) <- paste("ind", 1:n_i)
+  
   
   tc <- m_costs %*% v_discount_weights_costs                                     # total discounted costs per individual
   te <- (m_qalys * cycle_length) %*% v_discount_weights_qalys                    # total discounted QALYs per individual

@@ -21,7 +21,7 @@ library(RColorBrewer)
 library(ggthemes)
 library(knitr)
 library(gridExtra)
-
+library(matrixStats)
 
 
 ##################
@@ -30,9 +30,9 @@ library(gridExtra)
 #### 1) Population Inputs ####
 #### Structural parameters ####
 
-n_i <- 5000                              # number of individuals
-n_t <- 8                          # time horizon (cycles)
-cycle_length <- 1/52                  # length of each cycle (in years)
+n_i <- 2000                       # number of individuals
+n_t <- 10                          # time horizon (cycles)
+cycle_length <- 1/52              # length of each cycle (in years)
 
 v_asthma_state_names <- c("0",        # No asthma 
                           "1",        # Complete control
@@ -44,41 +44,43 @@ v_asthma_state_names <- c("0",        # No asthma
                           "100")      # Dead - other cause
 
 
-n_asthma_states <- length(v_asthma_state_names)                                  # save number of health states
+n_asthma_states <- length(v_asthma_state_names)     # save number of health states
 
 #### Individual characteristics ####
 
-# Read in microdata and extract subset
+# Read in microdata and extract subset of those with asthma
 full_pop <- readRDS("Data/Microdata/microdata.rds")
 set.seed(123)
 asthma_pop <- subset(full_pop, subset=asthma_status>0)
 
+# Alternative sample with no asthma restriction
 # pop_sample <- full_pop[sample(nrow(full_pop), size = n_i), ]
-#pop_sample$id <- 1:n_i                                                             # add ID numbers
+# pop_sample$id <- 1:n_i                                       # add ID numbers
 # 
 # asthma_sample <- asthma_pop[sample(nrow(asthma_pop), size = n_i), ]
 # asthma_sample$id <- 1:n_i
+
 # Get list of counties and fips codes
 counties <- read.csv("Data/Microdata/counties.csv")
 
 
-discount_rate_costs <- discount_rate_qalys <- 0.0                                # 3% discount rate for both costs and QALYs (0 for biweekly cycycle_lengthes up to a year)
+discount_rate_costs <- discount_rate_qalys <- 0.0         # 3% discount rate for both costs and QALYs (0 for biweekly cycycle_lengthes up to a year)
 
-v_interventions <- c("No intervention", "Distribute air filter")                 # intervention names (non-medical interventions)
+v_interventions <- c("No intervention", "Distribute air filter")  # intervention names (non-medical interventions)
 
 m_asthma_therapy_probs <- read.csv("Data/Asthma/Therapies/therapies.csv", row.names = 1)
 v_asthma_therapies <- names(m_asthma_therapy_probs)             # continuous therapies / asthma management 
 
 m_asthma_healthcare_use_probs <- read.csv("Data/Asthma/Healthcare use/Healthcare_use_input.csv", row.names = 1, stringsAsFactors = FALSE)
-v_healthcare_use <- c("none", "ocs","ugt","ed","hosp")                           # acute exacerbations - outcomes
+v_healthcare_use <- c("none", "ocs","ugt","ed","hosp")          # acute exacerbations - outcomes
 
 
 baseline_birth_rate <- 0
 # (52.4/1000) * cycle_length   # convert annual birth rate into rate for cycle length
-annual_birth_rate_change <- 0               # annual change in birth rate - 0 for up to a year
+annual_birth_rate_change <- 0  # annual change in birth rate - 0 for up to a year
 # -0.035 * cycle_length
 
-annual_allcause_mortality_change <- 0                                            # annual change in all cause mortality rate - 0 for up to a year
+annual_allcause_mortality_change <- 0   # annual change in all cause mortality rate - 0 for up to a year
 # (-2.2/100) * cycle_length
 
 
@@ -101,7 +103,11 @@ v_asthma_costs <- c(0,       # 0 (no asthma)
                     5000,    # 4 (poor control)
                     10000,   # 5 (no control at all)
                     0,       # 50 (dead- asthma)
-                    0)       # 100 (dead - other cause)
+                    0)       # 100 (dead - other cause)  #annual costs
+
+v_asthma_costs <- v_asthma_costs * cycle_length
+names(v_asthma_costs) <- v_asthma_state_names
+
 
 v_intervention_costs <- 20   # cost of intervention per person per cycle
 
@@ -113,14 +119,16 @@ v_asthma_hsu <- c(1,         # 0 (no asthma)
                   0.5,       # 5 (no control at all)
                   0,         # 50 (dead - asthma)
                   0)         # 100 (dead - other cause)
-
+names(v_asthma_hsu) <- v_asthma_state_names
 
 #### 2) Climate Data ####
 
+# Read in smoke data and create the "no fire" dataframe
 smoke_data <- readRDS("Data/Fire/smoke_per_cycle.rds")
 smoke_data_0 <- smoke_data
 smoke_data_0[,-ncol(smoke_data)] <- 0
 
+# Identify counties that experienced any smoke, further subset the sample to include only those affected by smoke
 fire_counties <- smoke_data$countyfip[smoke_data$Cycle_1 != 0 | smoke_data$Cycle_2 != 0]
 asthma_fire_pop <- subset(asthma_pop, subset=countyfip %in% fire_counties)
 asthma_fire_sample <- asthma_fire_pop[sample(nrow(asthma_fire_pop), size = n_i), ]
@@ -147,7 +155,7 @@ asthma_fire_sample$id <- 1:n_i
                         discount_rate_qalys,
                         min_residual = 0,
                         seed = 12345,
-                        record_run = TRUE,
+                        record_run = FALSE,
                         description="Asthma Sim No Fire 0% Min Residual Probability")
 #})
 
@@ -157,15 +165,7 @@ fig_0.1_resid <- make_figures(sim_no_fire, "Health states over time, min_residua
 
 sim_no_fire_rerun <- reRunMicroSim("Runs/results_20230912_1723.RData")
 
-
-
 identical(sim_no_fire, sim_no_fire2)
-
-sample1 <- asthma_fire_sample[asthma_fire_sample$asthma_status == "5", ]
-sample1$id <- 1:nrow(sample1)
-
-risk_modifiers2 <- risk_modifiers
-risk_modifiers2[risk_modifiers2 == 1.049] <- 2
 
 sim_fire_0.1_resid <- MicroSim(n_i, n_t, 
                      smoke_data = smoke_data,
@@ -186,9 +186,9 @@ sim_fire_0.1_resid <- MicroSim(n_i, n_t,
                      min_residual = 0.1,
                      seed = 12345,
                      record_run = FALSE,
-                     description = "Asthma Sim With Fire and Lag 10% Min Resid")
+                     description = "Asthma Sim With Fire and Lag 50% Min Resid")
 
-n_t <- 20
 figure_no_resid <- make_figures(sim_fire_no_resid, "No residual", 1)
 figure_0.1_resid <- make_figures(sim_fire_0.1_resid, "10% min residual", 1)
+figure_0.5_resid <- make_figures(sim_fire_0.5_resid, "50% min residual", 1)
 

@@ -1,12 +1,12 @@
 #### Tables and Figures ####
 
-# library(ggplot2)
-# library(reshape2)
-# library(scales)
-# library(RColorBrewer)
-# library(ggthemes)
-# library(knitr)
-# library(gridExtra)
+library(ggplot2)
+library(reshape2)
+library(scales)
+library(RColorBrewer)
+library(ggthemes)
+library(knitr)
+library(gridExtra)
 
 
 ####### Make figures ######
@@ -35,12 +35,16 @@ make_figures <- function(results, title, fire_sim_flag=FALSE){
     labs(title = title, x="cycle", y="Number in state") +
     scale_fill_manual(values=mycolors, labels=states)
     
-  if(fire_sim_flag){  
-  if(sum(smoke_data[ ,-ncol(smoke_data)])!=0) {
+  if(fire_sim_flag && sum(smoke_data[ ,-ncol(smoke_data)])!=0) {
       fires <- colSums(smoke_data)
-      figure <- figure + geom_vline(xintercept=which(fires>=1))
-    }
-  }
+      fire_df <- data.frame(xintercept = which(fires >= 1), intensity = fires[fires >= 1])
+      
+      figure <- figure +
+        geom_vline(data = fire_df, aes(xintercept = xintercept, size = intensity), 
+                   color = "red") +
+      scale_size_continuous(range = c(0.1, 5), guide = "none")  
+      }
+
   print(figure)
   return(figure)
 }
