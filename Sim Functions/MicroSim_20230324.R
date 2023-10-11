@@ -20,7 +20,7 @@ MicroSim <- function(n_i,
                      seed = 1, 
                      record_run = TRUE,
                      description = "This is an asthma simulation"
-                     ) {
+) {
   
   # ===============SET UP LOGS/RECORDS ==================
   start_time <- Sys.time()
@@ -80,28 +80,14 @@ MicroSim <- function(n_i,
     m_asthma_healthcare_use <- 
     matrix(nrow=n_i, ncol=n_t+1, dimnames = list(paste("ind", 1:n_i), 
                                                  paste("cycle",0:n_t))) 
-  
   m_intervention_receipt[ ,1] <- 0      # initial intervention: none
-  
   m_asthma_therapies[ ,1] <- pop_sample$asthma_therapy  # initial asthma management: pulled from individual data
-  
   m_asthma_states[ ,1] <- pop_sample$asthma_status      # initial health states: pulled from data
-  
   m_asthma_healthcare_use[ ,1] <- "none"
   
-  # initialize treatment tracking table (keep track of how long people have been on current therapy, if it has been successful in the past)
-  temp <- expand.grid(pop_sample$id, v_asthma_therapies)
-  tx_tracker <- data.frame(id=temp$Var1, tx=temp$Var2, tx_start=NA, tx_end=NA, tx_success=NA, tx_count=0)
+  time_since_dr_visit <- rep(0, n_i)                    # create vector to count cycles between doctor visits
   
-  
-  # assign start time to each individual for the therapy at initialization
-
-  for (i in 1:n_i) {
-    tx <-  pop_sample[i, "asthma_therapy"]                                # find what therapy they're on
-    tx_tracker[tx_tracker$id==i & tx_tracker$tx==tx, ]$tx_start <- 0             # note start time 0 for that individual-treatment row
-  }
-  
-  v_total_pop  <- rep(NA, n_t+1)                                                 # vector to track population size over each cycle
+  v_total_pop  <- rep(NA, n_t+1)                        # vector to track population size over each cycle
   v_total_pop[1] <- n_i
   
   log_output(100, 
@@ -132,8 +118,6 @@ MicroSim <- function(n_i,
       } else {
         m_intervention_receipt[i,t+1] <- 0
       }
-      
-      
       
       # calculate the transition probability for individual i at cycle t
       # First use the Probs function to calculate the transition probabilities 
@@ -170,50 +154,21 @@ MicroSim <- function(n_i,
       set.seed(seed+i*79+t*71) 
       worse_control <- as.integer(m_asthma_states[i,t+1]) > 
         as.integer(m_asthma_states[i, t])                                        # assess if asthma control status got worse
-      last_dr_visit <-  (t+1) - 
-        tx_tracker$tx_start[tx_tracker$id==i & 
-                              tx_tracker$tx==m_asthma_therapies[i,t]]            # assess time since current therapy began
+      time_since_dr_visit[i] <- time_since_dr_visit[i] + 1                       # increase time since last doctor visit by one cycle
       
-      # if you have poorer control of if you're due for a doctor's visit, 
-      # you will be reevaluated for changing therapies
-      
-      if (worse_control | last_dr_visit>2) {                                 
-        
+      if (worse_control | time_since_dr_visit[i]>=2) {                                 
         m_asthma_therapies[i, t+1] <- 
           sample(v_asthma_therapies, size=1, 
                  prob=m_asthma_therapy_probs[m_asthma_states[i,t+1], ])          # determine therapy for next cycle (given prob of each therapy based on new health state)
-        
-        tx_tracker$tx_end[tx_tracker$id==i & 
-                            tx_tracker$tx==m_asthma_therapies[i,t]] <- t         # note tx end date for previous tx
-        
-        tx_tracker$tx_start[tx_tracker$id==i & 
-                              tx_tracker$tx==m_asthma_therapies[i,t+1]] <- t     # note tx start date for new tx
-        
-        tx_tracker$tx_count[tx_tracker$id==i & 
-                              tx_tracker$tx==m_asthma_therapies[i,t]] <- 
-          tx_tracker$tx_count[tx_tracker$id==i & 
-                                tx_tracker$tx==m_asthma_therapies[i,t]] + 1      # update lifetime count of that therapy
-        
-        # assess whether therapy was successful
-        # if no change in control or poorer control, therapy NOT successful.
-        # To be discussed.
-        
-        if (as.integer(m_asthma_states[i,t+1]) == 
-            as.integer(m_asthma_states[i, t]) | worse_control) {                 
-          tx_tracker$tx_success[tx_tracker$id==i & 
-                                  tx_tracker$tx==m_asthma_therapies[i,t]] <- 0
-        } else {
-          tx_tracker$tx_success[tx_tracker$id==i & 
-                                  tx_tracker$tx==m_asthma_therapies[i,t]] <- 1
-        }
+        time_since_dr_visit[i] <- 0                                              # reset dr_visits counter
       } else {                                                                   # otherwise keep using the same therapy
         m_asthma_therapies[i, t+1] <- m_asthma_therapies[i,t]
       }
-
+      
       pop_sample$age[i] <- 
         pop_sample$age[i] + cycle_length                              # increase age by cycle length
       
-     
+      
       # # if individual is not Dead, determine # of kids born in year t
       # if (m_asthma_states[i,t+1] != "50" & m_asthma_states[i, t+1] != "100") {
       #   set.seed(seed+i*79+t*71) 
@@ -261,7 +216,7 @@ MicroSim <- function(n_i,
     n_i <- n_i + total_births_t                                                  # increase n_i for next cycle by the total number of births
     v_total_pop[t+1] <- n_i                                                      # add the new population size to the population size tracking vector
     
-  
+    
     
   }    # close loop for cycles
   
@@ -315,9 +270,8 @@ MicroSim <- function(n_i,
     pop_sample_end = pop_sample, 
     TR_absolute = TR_absolute,
     TR_proportion = TR_proportion,
-    TR_healthcare_use = TR_healthcare_use,
-    tx_tracker = tx_tracker
-    )
+    TR_healthcare_use = TR_healthcare_use
+  )
   
   
   end_time <- Sys.time()
@@ -339,7 +293,7 @@ MicroSim <- function(n_i,
     add_results_to_simulation_list(result_file_path, description, n_i, n_t)
   }
   
-
+  
   return(results)
   
 }
@@ -347,7 +301,7 @@ MicroSim <- function(n_i,
 reRunMicroSim <- function(results_file) {
   # Read the metadata from the file
   load(results_file)
-
+  
   # Extract the parameters from metadata
   parameters <- results$metadata$parameters
   
