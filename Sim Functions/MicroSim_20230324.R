@@ -89,6 +89,7 @@ MicroSim <- function(n_i,
   
   v_total_pop  <- rep(NA, n_t+1)                        # vector to track population size over each cycle
   v_total_pop[1] <- n_i
+  v_total_pop_alive <- v_total_pop
   
   log_output(100, 
              paste0("Starting simulation for n_i = ", n_i, 
@@ -138,20 +139,21 @@ MicroSim <- function(n_i,
                        record_run = record_run)
       log_output(1, sprintf("   Probs calculated i=%s in" , i), log_file)
       
-      
-      set.seed(seed+i*79+t*71) 
-      m_asthma_states[i, t+1] <- 
+        m_asthma_states[i, t+1] <- 
         sample(v_asthma_state_names, prob=v_probs, size=1)                       # sample the next health state given adjusted probabilities
       
       
-      
+      if (fire_it == 0) {
       m_asthma_healthcare_use[i, t+1] <- 
         sample(v_healthcare_use, size = 1,
-               prob = m_asthma_healthcare_use_probs[m_asthma_states[i,t+1], ])
-      
+               prob = m_asthma_healthcare_use_probs_nofire[m_asthma_states[i,t+1], ])
+      } else {
+        m_asthma_healthcare_use[i, t+1] <- 
+          sample(v_healthcare_use, size = 1,
+                 prob = m_asthma_healthcare_use_probs_fireadj[m_asthma_states[i,t+1], ])
+      }
       
       # Determine new therapy if therapy changed
-      set.seed(seed+i*79+t*71) 
       worse_control <- as.integer(m_asthma_states[i,t+1]) > 
         as.integer(m_asthma_states[i, t])                                        # assess if asthma control status got worse
       time_since_dr_visit[i] <- time_since_dr_visit[i] + 1                       # increase time since last doctor visit by one cycle
@@ -215,7 +217,9 @@ MicroSim <- function(n_i,
     
     n_i <- n_i + total_births_t                                                  # increase n_i for next cycle by the total number of births
     v_total_pop[t+1] <- n_i                                                      # add the new population size to the population size tracking vector
-    
+    n_deaths <- sum(m_asthma_states[ ,t+1]=="50" | m_asthma_states[ ,t+1]=="100") # count number who died in cycle t
+    v_total_pop_alive[t+1] <- n_i - n_deaths
+
     
     
   }    # close loop for cycles
@@ -249,7 +253,7 @@ MicroSim <- function(n_i,
   rownames(TR_proportion) <- paste("cycle", 0:n_t)
   
   TR_healthcare_use <- t(apply(m_asthma_healthcare_use, 2, function(x) 
-    table(factor(x, levels = v_healthcare_use, ordered = TRUE)))) / v_total_pop
+    table(factor(x, levels = v_healthcare_use, ordered = TRUE)))) / v_total_pop_alive
   colnames(TR_healthcare_use) <- v_healthcare_use
   rownames(TR_healthcare_use) <- paste("cycle", 0:n_t)
   

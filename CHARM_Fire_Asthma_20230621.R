@@ -6,8 +6,6 @@ rm(list = ls()) # remove any variables in R's memory
 # setwd("C:/Users/alkin/Desktop/sigal sim/Climate-Health")
 source("Sim Functions/MicroSim_20230324.R")
 source("Sim Functions/Probs2.R")
-source("Sim Functions/Costs.R")
-source("Sim Functions/Effs.R")
 source("Sim Functions/multisheet2array.R")
 source("Sim Functions/logging.R")
 source("Sim Functions/Tables_Figures.R")
@@ -30,8 +28,8 @@ library(matrixStats)
 #### 1) Population Inputs ####
 #### Structural parameters ####
 
-n_i <- 2000                       # number of individuals
-n_t <- 10                          # time horizon (cycles)
+n_i <- 5000                       # number of individuals
+n_t <- 10                         # time horizon (cycles)
 cycle_length <- 1/52              # length of each cycle (in years)
 
 v_asthma_state_names <- c("0",        # No asthma 
@@ -71,8 +69,9 @@ v_interventions <- c("No intervention", "Distribute air filter")  # intervention
 m_asthma_therapy_probs <- read.csv("Data/Asthma/Therapies/therapies.csv", row.names = 1)
 v_asthma_therapies <- names(m_asthma_therapy_probs)             # continuous therapies / asthma management 
 
-m_asthma_healthcare_use_probs <- read.csv("Data/Asthma/Healthcare use/Healthcare_use_input.csv", row.names = 1, stringsAsFactors = FALSE)
+m_asthma_healthcare_use_probs_nofire <- read.csv("Data/Asthma/Healthcare use/Healthcare_use_input.csv", row.names = 1, stringsAsFactors = FALSE)
 v_healthcare_use <- c("none", "ocs","ugt","ed","hosp")          # acute exacerbations - outcomes
+m_asthma_healthcare_use_probs_fireadj <- read.csv("Data/Asthma/Healthcare use/Healthcare_use_fire_input.csv", row.names = 1, stringsAsFactors = FALSE)
 
 
 baseline_birth_rate <- 0
@@ -90,33 +89,33 @@ annual_allcause_mortality_change <- 0   # annual change in all cause mortality r
 # Transition probabilities and risk modifiers (stored in a 3-dimensional array with risk factors along the z-axis)
 
 risk_modifiers <- multisheet2array(
-  path = "Data/Asthma/Transition probabilities/transition data _ weekly _ recalibrate2.xlsx", 
+  path = "Data/Asthma/Transition probabilities/transition data_weekly_recalibrate2.xlsx", 
   range=("B1:I9"), x_names = v_asthma_state_names, y_names = v_asthma_state_names)
 
 
 #### Cost and utility inputs ####
 
-v_asthma_costs <- c(0,       # 0 (no asthma)
-                    0,       # 1 (complete control)
-                    100,     # 2 (well control)
-                    1000,    # 3 (somewhat control)
-                    5000,    # 4 (poor control)
-                    10000,   # 5 (no control at all)
+# Note - make sure costs are weekly!! see the file medical_costs_inflation.R
+v_asthma_costs <- c(100,       # 0 (no asthma)
+                    100,       # 1 (complete control)
+                    113,     # 2 (well control)
+                    142,    # 3 (somewhat control)
+                    225,    # 4 (poor control)
+                    439,   # 5 (no control at all)
                     0,       # 50 (dead- asthma)
                     0)       # 100 (dead - other cause)  #annual costs
 
-v_asthma_costs <- v_asthma_costs * cycle_length
 names(v_asthma_costs) <- v_asthma_state_names
 
 
 v_intervention_costs <- 20   # cost of intervention per person per cycle
 
 v_asthma_hsu <- c(1,         # 0 (no asthma)
-                  1,         # 1 (complete control)
-                  0.9,       # 2 (well control)
-                  0.8,       # 3 (somewhat control)
-                  0.6,       # 4 (poor control)
-                  0.5,       # 5 (no control at all)
+                  0.95,         # 1 (complete control)
+                  0.89,       # 2 (well control)
+                  0.83,       # 3 (somewhat control)
+                  0.77,       # 4 (poor control)
+                  0.71,       # 5 (no control at all)
                   0,         # 50 (dead - asthma)
                   0)         # 100 (dead - other cause)
 names(v_asthma_hsu) <- v_asthma_state_names
@@ -137,7 +136,7 @@ asthma_fire_sample$id <- 1:n_i
 #### 3) Run Model ####
 
 # profvis({
-   sim_no_fire2 <-MicroSim(n_i, n_t, 
+   sim_no_fire <-MicroSim(n_i, n_t, 
                         smoke_data = smoke_data_0,
                         v_asthma_state_names, 
                         asthma_fire_sample, 
@@ -160,7 +159,7 @@ asthma_fire_sample$id <- 1:n_i
 #})
 
 fig_no_resid <- make_figures(sim_no_fire2, "Health states over time, min_residual=0")
-fig_0.1_resid <- make_figures(sim_no_fire, "Health states over time, min_residual=0.1")
+fig_no_resid <- make_figures(sim_no_fire, "Health states over time, min_residual=0")
 
 
 sim_no_fire_rerun <- reRunMicroSim("Runs/results_20230912_1723.RData")
@@ -186,9 +185,10 @@ sim_fire_0.1_resid <- MicroSim(n_i, n_t,
                      min_residual = 0.1,
                      seed = 12345,
                      record_run = FALSE,
-                     description = "Asthma Sim With Fire and Lag 50% Min Resid")
+                     description = "Asthma Sim With Fire and Lag 10% Min Resid")
 
 figure_no_resid <- make_figures(sim_fire_no_resid, "No residual", 1)
 figure_0.1_resid <- make_figures(sim_fire_0.1_resid, "10% min residual", 1)
+figure_0.1_resid_nodeath <- make_figures(sim_fire_0.1_resid_nodeath, "10% min residual", 1)
 figure_0.5_resid <- make_figures(sim_fire_0.5_resid, "50% min residual", 1)
 
