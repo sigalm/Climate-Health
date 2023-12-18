@@ -6,6 +6,8 @@ rm(list = ls()) # remove any variables in R's memory
 # setwd("C:/Users/alkin/Desktop/sigal sim/Climate-Health")
 source("Sim Functions/MicroSim_20230324.R")
 source("Sim Functions/Probs2.R")
+source("Sim Functions/Costs.R")
+source("Sim Functions/Effs.R")
 source("Sim Functions/multisheet2array.R")
 source("Sim Functions/logging.R")
 source("Sim Functions/Tables_Figures.R")
@@ -70,8 +72,8 @@ m_asthma_therapy_probs <- read.csv("Data/Asthma/Therapies/therapies.csv", row.na
 v_asthma_therapies <- names(m_asthma_therapy_probs)             # continuous therapies / asthma management 
 
 m_asthma_healthcare_use_probs_nofire <- read.csv("Data/Asthma/Healthcare use/Healthcare_use_input.csv", row.names = 1, stringsAsFactors = FALSE)
-v_healthcare_use <- c("none", "ocs","ugt","ed","hosp")          # acute exacerbations - outcomes
 m_asthma_healthcare_use_probs_fireadj <- read.csv("Data/Asthma/Healthcare use/Healthcare_use_fire_input.csv", row.names = 1, stringsAsFactors = FALSE)
+v_healthcare_use <- c("none", "ocs","ugt","ed","hosp")          # acute exacerbations - outcomes
 
 
 baseline_birth_rate <- 0
@@ -91,6 +93,11 @@ annual_allcause_mortality_change <- 0   # annual change in all cause mortality r
 risk_modifiers <- multisheet2array(
   path = "Data/Asthma/Transition probabilities/transition data_weekly_recalibrate2.xlsx", 
   range=("B1:I9"), x_names = v_asthma_state_names, y_names = v_asthma_state_names)
+
+risk_modifiers_fire_loadings <- multisheet2array(
+  path = "Data/Asthma/Transition probabilities/transition data_weekly_recalibrate2_loaded_fire_rrs.xlsx", 
+  range=("B1:I9"), x_names = v_asthma_state_names, y_names = v_asthma_state_names)
+
 
 
 #### Cost and utility inputs ####
@@ -159,7 +166,7 @@ asthma_fire_sample$id <- 1:n_i
 #})
 
 fig_no_resid <- make_figures(sim_no_fire2, "Health states over time, min_residual=0")
-fig_no_resid <- make_figures(sim_no_fire, "Health states over time, min_residual=0")
+fig_no_resid_nodeath <- make_figures(sim_no_fire_nodeath, "Health states over time, min_residual=0")
 
 
 sim_no_fire_rerun <- reRunMicroSim("Runs/results_20230912_1723.RData")
@@ -185,7 +192,7 @@ sim_fire_0.1_resid <- MicroSim(n_i, n_t,
                      min_residual = 0.1,
                      seed = 12345,
                      record_run = FALSE,
-                     description = "Asthma Sim With Fire and Lag 10% Min Resid")
+                     description = "Asthma Sim With Fire and Lag 50% Min Resid")
 
 figure_no_resid <- make_figures(sim_fire_no_resid, "No residual", 1)
 figure_0.1_resid <- make_figures(sim_fire_0.1_resid, "10% min residual", 1)

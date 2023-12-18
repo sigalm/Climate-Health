@@ -144,11 +144,11 @@ MicroSim <- function(n_i,
       
       
       if (fire_it == 0) {
-      m_asthma_healthcare_use[i, t+1] <- 
+      m_asthma_healthcare_use[i, t+1] <-
         sample(v_healthcare_use, size = 1,
                prob = m_asthma_healthcare_use_probs_nofire[m_asthma_states[i,t+1], ])
       } else {
-        m_asthma_healthcare_use[i, t+1] <- 
+        m_asthma_healthcare_use[i, t+1] <-
           sample(v_healthcare_use, size = 1,
                  prob = m_asthma_healthcare_use_probs_fireadj[m_asthma_states[i,t+1], ])
       }

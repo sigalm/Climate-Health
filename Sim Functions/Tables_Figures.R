@@ -14,8 +14,7 @@ make_figures <- function(results, title, fire_sim_flag=FALSE){
   
   theme_set(theme_few())
   mycolors <- brewer.pal(n=n_asthma_states, name="Set3")
-  states <- c('No asthma',
-              'Completely controlled',
+  states <- c('Completely controlled',
               'Well-controlled',
               'Somewhat controlled',
               'Poorly controlled',
@@ -26,17 +25,18 @@ make_figures <- function(results, title, fire_sim_flag=FALSE){
   trace <- as.data.frame(results$TR_absolute)
   trace$cycle <- factor(0:n_t)
   trace_long <- melt(data=trace,id.vars="cycle", variable.name="state", value.name="number_of_people")
+  trace_long <- trace_long[trace_long$state != 0, ]
   
   figure <- ggplot(trace_long, 
                    aes(x = cycle, y = number_of_people, group=state, 
                        fill = state, order = dplyr::desc(state))) +
     geom_area(alpha = .6) +
     geom_line(position = "stack", size = .2) +
-    labs(title = title, x="cycle", y="Number in state") +
-    scale_fill_manual(values=mycolors, labels=states)
+    labs(title = title, x="Week", y="Number of individuals in disease state") +
+    scale_fill_manual(name="Disease State", values=mycolors, labels=states)
     
   if(fire_sim_flag && sum(smoke_data[ ,-ncol(smoke_data)])!=0) {
-      fires <- colSums(smoke_data)
+      fires <- colSums(smoke_data[ ,-1])
       fire_df <- data.frame(xintercept = which(fires >= 1), intensity = fires[fires >= 1])
       
       figure <- figure +
