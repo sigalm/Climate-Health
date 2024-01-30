@@ -23,7 +23,7 @@ nrow(smoke[smoke$Daily.Mean.PM2.5.Concentration<=0, ]) # some observations are z
 nrow(smoke[smoke$Daily.Mean.PM2.5.Concentration<=0, ]) / nrow(smoke) 
 
 # 0.6% of observations are not acceptable. Remove them.
-smoke <- smoke %>% filter(Daily.Mean.PM2.5.Concentration > 0)
+smoke$Daily.Mean.PM2.5.Concentration[smoke$Daily.Mean.PM2.5.Concentration<0] <- 0
 
 smoke_abbr <- smoke %>%
   group_by(Date, COUNTY, countyfip) %>%
@@ -38,7 +38,7 @@ start_date_2 <- mdy("09/01/2018")
 end_date_2 <- mdy("11/01/2018")
 
 # Dates for the final data frame
-start_date_3 <- start_date_1 - weeks(1)
+start_date_3 <- start_date_1 - weeks(5)
 end_date_3 <- start_date_1 + years(1) - days(1)
 
 # Calculate the incremental pollution from the fire, following the methods from Gan et al 2022
@@ -70,14 +70,14 @@ camp$fire_PM2.5[camp$fire_PM2.5<0] <- 0
 # Reorder rows to make more sense then save dataframe
 camp <- arrange(camp, countyfip, Date)
 
-saveRDS(camp, "Data/Fire/campfire_PM2.5.RDS")
+saveRDS(camp, "Data/Fire/campfire_PM2.5_5weekstartup.RDS")
 
 
-camp <- readRDS("Data/Fire/campfire_PM2.5.RDS")
+camp <- readRDS("Data/Fire/campfire_PM2.5_5weekstartup.RDS")
+
 # Create a second data frame that contains # of smoke days each week, with counties in rows and weeks (cycles) in columns
 camp <- camp %>%
-  group_by(countyfip) %>%
-  mutate(cycle = as.integer(difftime(Date, first(Date), units = "days")) %/% 7)
+  mutate(cycle = as.integer(as.numeric(Date - start_date_3) %/% 7))
 
 camp_roll <- camp %>%
   filter(fire_PM2.5 > 35) %>%
@@ -92,5 +92,5 @@ smoke_per_cycle <- smoke_days %>%
 
 smoke_per_cycle <- select(smoke_per_cycle, -1, everything(), 1)
 
-saveRDS(smoke_per_cycle, "Data/Fire/smoke_per_cycle.RDS")
+saveRDS(smoke_per_cycle, "Data/Fire/smoke_per_cycle_5wkstartup.RDS")
 

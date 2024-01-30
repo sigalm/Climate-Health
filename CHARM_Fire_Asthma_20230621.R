@@ -6,7 +6,7 @@ rm(list = ls()) # remove any variables in R's memory
 # setwd("C:/Users/alkin/Desktop/sigal sim/Climate-Health")
 source("Sim Functions/MicroSim_20230324.R")
 source("Sim Functions/Probs2.R")
-source("Sim Functions/Costs.R")
+# source("Sim Functions/Costs.R")
 source("Sim Functions/Effs.R")
 source("Sim Functions/multisheet2array.R")
 source("Sim Functions/logging.R")
@@ -30,8 +30,8 @@ library(matrixStats)
 #### 1) Population Inputs ####
 #### Structural parameters ####
 
-n_i <- 5000                       # number of individuals
-n_t <- 10                         # time horizon (cycles)
+n_i <- 5000                      # number of individuals
+n_t <- 20                        # time horizon (cycles)
 cycle_length <- 1/52              # length of each cycle (in years)
 
 v_asthma_state_names <- c("0",        # No asthma 
@@ -94,11 +94,6 @@ risk_modifiers <- multisheet2array(
   path = "Data/Asthma/Transition probabilities/transition data_weekly_recalibrate2.xlsx", 
   range=("B1:I9"), x_names = v_asthma_state_names, y_names = v_asthma_state_names)
 
-risk_modifiers_fire_loadings <- multisheet2array(
-  path = "Data/Asthma/Transition probabilities/transition data_weekly_recalibrate2_loaded_fire_rrs.xlsx", 
-  range=("B1:I9"), x_names = v_asthma_state_names, y_names = v_asthma_state_names)
-
-
 
 #### Cost and utility inputs ####
 
@@ -127,15 +122,27 @@ v_asthma_hsu <- c(1,         # 0 (no asthma)
                   0)         # 100 (dead - other cause)
 names(v_asthma_hsu) <- v_asthma_state_names
 
+v_hsu_decrements <- c(-0.200,
+                      -0.163, 
+                      -0.132, 
+                      -0.125, 
+                      -0.115, 
+                      -0.065,
+                      -0.039,
+                      0)
+
+max_dur_decrement <- length(v_hsu_decrements)
+
+
 #### 2) Climate Data ####
 
 # Read in smoke data and create the "no fire" dataframe
-smoke_data <- readRDS("Data/Fire/smoke_per_cycle.rds")
+smoke_data <- readRDS("Data/Fire/smoke_per_cycle_5wkstartup.rds")
 smoke_data_0 <- smoke_data
 smoke_data_0[,-ncol(smoke_data)] <- 0
 
 # Identify counties that experienced any smoke, further subset the sample to include only those affected by smoke
-fire_counties <- smoke_data$countyfip[smoke_data$Cycle_1 != 0 | smoke_data$Cycle_2 != 0]
+fire_counties <- smoke_data$countyfip[smoke_data$Cycle_5 != 0 | smoke_data$Cycle_6 != 0]
 asthma_fire_pop <- subset(asthma_pop, subset=countyfip %in% fire_counties)
 asthma_fire_sample <- asthma_fire_pop[sample(nrow(asthma_fire_pop), size = n_i), ]
 asthma_fire_sample$id <- 1:n_i
@@ -143,30 +150,29 @@ asthma_fire_sample$id <- 1:n_i
 #### 3) Run Model ####
 
 # profvis({
-   sim_no_fire <-MicroSim(n_i, n_t, 
-                        smoke_data = smoke_data_0,
-                        v_asthma_state_names, 
-                        asthma_fire_sample, 
-                        risk_modifiers,
-                        cycle_length, 
-                        baseline_birth_rate, annual_birth_rate_change, 
-                        annual_allcause_mortality_change,
-                        v_asthma_therapies,
-                        m_asthma_therapy_probs, 
-                        v_asthma_costs,
-                        v_intervention_costs,
-                        intervention_coverage = 0, 
-                        intervention_trigger = 0, 
-                        discount_rate_costs,
-                        discount_rate_qalys,
-                        min_residual = 0,
-                        seed = 12345,
-                        record_run = FALSE,
-                        description="Asthma Sim No Fire 0% Min Residual Probability")
+sim_no_fire <-MicroSim(n_i, n_t, 
+                           smoke_data = smoke_data_0,
+                           v_asthma_state_names, 
+                           asthma_fire_sample, 
+                           risk_modifiers,
+                           cycle_length, 
+                           baseline_birth_rate, annual_birth_rate_change, 
+                           annual_allcause_mortality_change,
+                           v_asthma_therapies,
+                           m_asthma_therapy_probs, 
+                           v_asthma_costs,
+                           v_intervention_costs,
+                           intervention_coverage = 0, 
+                           intervention_trigger = 0, 
+                           discount_rate_costs,
+                           discount_rate_qalys,
+                           min_residual = 0,
+                           seed = 12345,
+                           record_run = FALSE,
+                           description="Asthma Sim No Fire 0% Min Residual Probability")
 #})
 
-fig_no_resid <- make_figures(sim_no_fire2, "Health states over time, min_residual=0")
-fig_no_resid_nodeath <- make_figures(sim_no_fire_nodeath, "Health states over time, min_residual=0")
+fig_no_resid <- make_figures(sim_no_fire, "Health states over time, min_residual=0")
 
 
 sim_no_fire_rerun <- reRunMicroSim("Runs/results_20230912_1723.RData")
@@ -174,28 +180,25 @@ sim_no_fire_rerun <- reRunMicroSim("Runs/results_20230912_1723.RData")
 identical(sim_no_fire, sim_no_fire2)
 
 sim_fire_0.1_resid <- MicroSim(n_i, n_t, 
-                     smoke_data = smoke_data,
-                     v_asthma_state_names, 
-                     pop_sample = asthma_fire_sample, 
-                     risk_modifiers,
-                     cycle_length, 
-                     baseline_birth_rate, annual_birth_rate_change, 
-                     annual_allcause_mortality_change,
-                     v_asthma_therapies,
-                     m_asthma_therapy_probs, 
-                     v_asthma_costs,
-                     v_intervention_costs,
-                     intervention_coverage = 0, 
-                     intervention_trigger = 0, 
-                     discount_rate_costs,
-                     discount_rate_qalys,
-                     min_residual = 0.1,
-                     seed = 12345,
-                     record_run = FALSE,
-                     description = "Asthma Sim With Fire and Lag 50% Min Resid")
+                               smoke_data = smoke_data,
+                               v_asthma_state_names, 
+                               pop_sample = asthma_fire_sample, 
+                               risk_modifiers,
+                               cycle_length, 
+                               baseline_birth_rate, annual_birth_rate_change, 
+                               annual_allcause_mortality_change,
+                               v_asthma_therapies,
+                               m_asthma_therapy_probs, 
+                               v_asthma_costs,
+                               v_intervention_costs,
+                               intervention_coverage = 0, 
+                               intervention_trigger = 0, 
+                               discount_rate_costs,
+                               discount_rate_qalys,
+                               min_residual = 0.1,
+                               seed = 12345,
+                               record_run = FALSE,
+                               description = "Asthma Sim With Fire and Lag 50% Min Resid")
 
-figure_no_resid <- make_figures(sim_fire_no_resid, "No residual", 1)
 figure_0.1_resid <- make_figures(sim_fire_0.1_resid, "10% min residual", 1)
-figure_0.1_resid_nodeath <- make_figures(sim_fire_0.1_resid_nodeath, "10% min residual", 1)
-figure_0.5_resid <- make_figures(sim_fire_0.5_resid, "50% min residual", 1)
 

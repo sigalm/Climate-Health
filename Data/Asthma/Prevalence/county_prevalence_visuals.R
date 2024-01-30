@@ -3,12 +3,15 @@ asthma$County_prevalence <- as.numeric(asthma$County_prevalence)
 asthma$Group <- gsub("-", " to ", asthma$Group)
 
 library(ggplot2)
+library(ggthemes)
 
 asthma2 <- asthma
 asthma2$Group <-
   factor(asthma2$Group, levels = c("0 to 4", "5 to 17", "18 to 64", "65+", "All"))
 asthma2$County_prevalence <- asthma2$County_prevalence*100
 asthma2$California_prevalence <- asthma2$California_prevalence*100
+
+theme_set(theme_few())
 
 # Boxplot to find outliers
 box_by_age <-
@@ -21,15 +24,16 @@ sorted_data <-
   asthma2[order(asthma2$County_prevalence, decreasing = TRUE),]
 head(sorted_data, 3)
 
+
 # Faceted bar plot, by county
 facet_by_county <-
-  ggplot(data = asthma2, aes(x = Group, y = County_prevalence, fill = Group)) +
+  ggplot(data = asthma2, aes(x = Group, y = County_prevalence/100, fill = Group)) +
   geom_bar(stat = "identity") +
-  geom_hline(yintercept = 8.7, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = 8.7/100, linetype = "dashed", color = "red") +
   labs(x = "Age Group", y = "Asthma Prevalence", fill = "Age Group") +
-  ggtitle("Asthma Prevalence by Age Group and County") +
-  facet_wrap( ~ County, scales = "fixed") +
-  coord_cartesian(ylim = c(0, 20))
+  theme(text = element_text(size = 20), axis.text.x = element_text(angle=45, vjust = 0.5), legend.position = "none") +
+  facet_wrap( ~ County, scales = "fixed", ncol = 6) +
+  coord_cartesian(ylim = c(0, 20/100))
 
 
 # Heatmap

@@ -33,7 +33,8 @@ make_figures <- function(results, title, fire_sim_flag=FALSE){
     geom_area(alpha = .6) +
     geom_line(position = "stack", size = .2) +
     labs(title = title, x="Week", y="Number of individuals in disease state") +
-    scale_fill_manual(name="Disease State", values=mycolors, labels=states)
+    scale_fill_manual(name="Disease State", values=mycolors, labels=states) +
+    scale_x_discrete(labels = seq(-4, n_t-4, by = 1))
     
   if(fire_sim_flag && sum(smoke_data[ ,-ncol(smoke_data)])!=0) {
       fires <- colSums(smoke_data[ ,-1])

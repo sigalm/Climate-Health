@@ -21,7 +21,7 @@ Probs <- function(M_it,                           # health state occupied by ind
   v_probs_it <- risk_modifiers[from_state, ,"transition_prob"]
   names(v_probs_it) <- v_asthma_state_names
   
-  
+
   # Create a vector where each row contains the individual's risk factors 
   # for each health state
   
@@ -42,7 +42,6 @@ Probs <- function(M_it,                           # health state occupied by ind
   
   # # Calculated adjusted probabilities vector
   # v_probs_it <- pmin(v_probs_it * v_prob_modifiers, 1)
-  # 
   
   # update the probability of all-cause mortality (changes over time) 
   # with the adjuster at time t

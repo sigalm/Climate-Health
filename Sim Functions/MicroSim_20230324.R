@@ -77,7 +77,8 @@ MicroSim <- function(n_i,
   m_asthma_states <- 
     m_intervention_receipt <- 
     m_asthma_therapies <-
-    m_asthma_healthcare_use <- 
+    m_asthma_healthcare_use <-
+    m_qalys <- 
     matrix(nrow=n_i, ncol=n_t+1, dimnames = list(paste("ind", 1:n_i), 
                                                  paste("cycle",0:n_t))) 
   m_intervention_receipt[ ,1] <- 0      # initial intervention: none
@@ -86,7 +87,11 @@ MicroSim <- function(n_i,
   m_asthma_healthcare_use[ ,1] <- "none"
   
   time_since_dr_visit <- rep(0, n_i)                    # create vector to count cycles between doctor visits
+  time_rf <-  rep(0, n_i)                               # create vector to track "risk" of improvement after severe exacerbation (poorly controlled or uncontrolled)
   
+  m_qalys[ ,1] <- Effs(m_asthma_states[ , 1], time_rf)
+  
+ 
   v_total_pop  <- rep(NA, n_t+1)                        # vector to track population size over each cycle
   v_total_pop[1] <- n_i
   v_total_pop_alive <- v_total_pop
@@ -99,6 +104,8 @@ MicroSim <- function(n_i,
   for (t in 1:n_t) {                                                             # start loop for time cycles
     
     total_births_t <- 0                                                          # initialize variable to keep track of number of births (define this in the loop because we want it to reset each cycle)
+    
+    time_rf <- time_rf - (time_rf>0)                                             # reduce time risk factor by 1 if not zero
     
     log_output(3, sprintf("Simulating cycle t=%s/%s", t, n_t), log_file)
     for (i in 1:n_i) {
@@ -126,7 +133,6 @@ MicroSim <- function(n_i,
       # characteristics/risk factors and the health state they're coming from
       # Then sample the new health state using those probabilities.
       
-      
       v_probs <- Probs(M_it = m_asthma_states[i,t],
                        risk_modifiers = risk_modifiers,
                        v_asthma_state_names = v_asthma_state_names,
@@ -139,14 +145,15 @@ MicroSim <- function(n_i,
                        record_run = record_run)
       log_output(1, sprintf("   Probs calculated i=%s in" , i), log_file)
       
-        m_asthma_states[i, t+1] <- 
-        sample(v_asthma_state_names, prob=v_probs, size=1)                       # sample the next health state given adjusted probabilities
+      m_asthma_states[i, t+1] <- 
+        sample(v_asthma_state_names, prob=v_probs, size=1)                      
+     
       
-      
+      # Sample if and what acute health resources will be used given new health state  
       if (fire_it == 0) {
-      m_asthma_healthcare_use[i, t+1] <-
-        sample(v_healthcare_use, size = 1,
-               prob = m_asthma_healthcare_use_probs_nofire[m_asthma_states[i,t+1], ])
+        m_asthma_healthcare_use[i, t+1] <-
+          sample(v_healthcare_use, size = 1,
+                 prob = m_asthma_healthcare_use_probs_nofire[m_asthma_states[i,t+1], ])
       } else {
         m_asthma_healthcare_use[i, t+1] <-
           sample(v_healthcare_use, size = 1,
@@ -167,8 +174,20 @@ MicroSim <- function(n_i,
         m_asthma_therapies[i, t+1] <- m_asthma_therapies[i,t]
       }
       
+      
+      # Start countdown from severe exacerbation
+      severe_exacerbation <- worse_control & (m_asthma_states[i, t+1] == 4 | m_asthma_states[i, t+1] == 5)
+      if (severe_exacerbation) {
+        time_rf[i] <- 7                                                       # note: max effect is 6 weeks. starting from 7 because will subtract 1 at the beginning of next cycle
+      }  
+      
+      # Assign health state utility
+      m_qalys[i, t+1] <- Effs(M_it = m_asthma_states[i,t],
+                              time_rf_it = time_rf[i]) 
+    
+      # Increase age by cycle length
       pop_sample$age[i] <- 
-        pop_sample$age[i] + cycle_length                              # increase age by cycle length
+        pop_sample$age[i] + cycle_length                              
       
       
       # # if individual is not Dead, determine # of kids born in year t
@@ -219,7 +238,7 @@ MicroSim <- function(n_i,
     v_total_pop[t+1] <- n_i                                                      # add the new population size to the population size tracking vector
     n_deaths <- sum(m_asthma_states[ ,t+1]=="50" | m_asthma_states[ ,t+1]=="100") # count number who died in cycle t
     v_total_pop_alive[t+1] <- n_i - n_deaths
-
+    
     
     
   }    # close loop for cycles
@@ -232,9 +251,7 @@ MicroSim <- function(n_i,
   m_costs <- sapply(as.data.frame(m_asthma_states), function(col) v_asthma_costs[col])
   # add intervention cost
   rownames(m_costs) <- paste("ind", 1:n_i)
-  m_qalys <- sapply(as.data.frame(m_asthma_states), function(col) v_asthma_hsu[col])
-  rownames(m_qalys) <- paste("ind", 1:n_i)
-  
+ 
   
   tc <- m_costs %*% v_discount_weights_costs                                     # total discounted costs per individual
   te <- (m_qalys * cycle_length) %*% v_discount_weights_qalys                    # total discounted QALYs per individual

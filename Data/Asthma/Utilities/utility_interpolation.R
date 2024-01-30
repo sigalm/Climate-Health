@@ -21,3 +21,18 @@ summary(lm)
 c_vals <- coefficients(lm)
 
 utilities_5 <- c_vals[1] + c_vals[2]*control_cat
+
+
+# Extrapolate decrement in utility in weeks 1-6 post-exacerbation
+# Data from Briggs et al (see Jim e-mail) table 2 (EQ=5D utilities)
+dec_data <- data.frame(time_since_exacerbation = c(7, 14, 21, 28, 49),
+                   utility_decrement = c(-0.163, -0.132, -0.125, -0.115, 0))
+
+lm_model <- lm(utility_decrement ~ time_since_exacerbation, data = dec_data)
+
+new_time_points <- c(35, 42)  # Add the time points you want to extrapolate to
+predicted_values <- predict(lm_model, newdata = data.frame(time_since_exacerbation = new_time_points))
+
+extrapolation_result <- data.frame(time_since_exacerbation = new_time_points, predicted_values)
+print(extrapolation_result)
+
