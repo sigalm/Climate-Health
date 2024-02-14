@@ -11,11 +11,11 @@ matrix_no_fire <- sim_no_fire$m_asthma_states
 matrix_fire <- sim_fire_0.1_resid$m_asthma_states
 
 # Extract columns for cycle 0 and cycle 2 for each scenario
-health_states_cycle0_no_fire <- matrix_no_fire[, 1]
-health_states_cycle2_no_fire <- matrix_no_fire[, 3]
+health_states_cycle0_no_fire <- matrix_no_fire[, 5]
+health_states_cycle2_no_fire <- matrix_no_fire[, 7]
 
-health_states_cycle0_fire <- matrix_fire[, 1]
-health_states_cycle2_fire <- matrix_fire[, 3]
+health_states_cycle0_fire <- matrix_fire[, 5]
+health_states_cycle2_fire <- matrix_fire[, 7]
 
 # Calculate health state differences for each scenario
 health_state_diff_no_fire <- as.numeric(health_states_cycle2_no_fire) - as.numeric(health_states_cycle0_no_fire)
@@ -30,7 +30,11 @@ cat("Percentage of individuals with poorer health state in cycle 2 (Scenario - N
 cat("Percentage of individuals with poorer health state in cycle 2 (Scenario - Fire):", percentage_poorer_fire, "%\n")
 
 percentage_poorer_fire / percentage_poorer_no_fire
-# this shows that the probability of worse outcomes are increased by 55% 
+# this shows that the probability of worse outcomes are increased by 33%
+
+5000 * (percentage_poorer_fire - percentage_poorer_no_fire) / 100
+
+
 
 sim_no_fire$TR_proportion
 colMeans(sim_no_fire$TR_proportion[-1, ])

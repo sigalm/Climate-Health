@@ -11,13 +11,13 @@ library(patchwork)
 
 # Generate figures for simulation trace
 
-fig_no_fire <- make_figures(sim_no_fire, "Health states over time, min_residual=0")
-figure_w_fire <- make_figures(sim_fire_0.1_resid, "10% min residual", 1)
+fig_no_fire <- make_figures(sim_no_fire, "No wildfire")
+figure_w_fire <- make_figures(sim_fire_0.1_resid, "Wildfire", 1)
 
 combined_fig <- fig_no_fire + figure_w_fire + plot_layout(ncol=2, guides = "collect") & 
-  theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.text = element_text(size = 10)) & 
-  ggtitle(NULL)
-combined_fig <- combined_fig + plot_annotation(tag_levels = "A")
+  theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.text = element_text(size = 10))
+# combined_fig <- combined_fig + plot_layout(tag_level = 'new') +
+#   plot_annotation(tag_levels = list(c('No Wildfire', 'Wildfire')))
 
 
 no_fire_healthcare_use <- sim_no_fire$m_asthma_healthcare_use
@@ -51,6 +51,7 @@ sum(te16_fire)/5000
 (sum(te16)/5000) / (sum(te16_fire)/5000)
 (sum(te16)/5000) - (sum(te16_fire)/5000)
 
+((sum(te16_fire)/5000) - (sum(te16)/5000)) / (sum(te16)/5000)
 sum(te16) - sum(te16_fire)
 
 
@@ -62,6 +63,15 @@ sum(sim_fire_0.1_resid$m_costs[ ,5:20]) / 5000
 sum(sim_fire_0.1_resid$m_costs[ ,5:20]) / sum(sim_no_fire$m_costs[ ,5:20])
 
 sum(sim_fire_0.1_resid$m_costs[ ,5:20]) - sum(sim_no_fire$m_costs[ ,5:20])
+
+
+
+# Average days of exposure
+indivs <- asthma_fire_sample[ ,c("id", "countyfip")]
+smoke_sum <- cbind(smoke_data, Total = rowSums(smoke_data[ ,-ncol(smoke_data)]))
+indiv_smoke <- merge(indivs, smoke_sum[ ,c("countyfip","Total")], by="countyfip")
+sum(indiv_smoke$Total)
+
 
 
 # Repeat sims for 10 different seeds to ensure we're capturing enough of the uncertainty.

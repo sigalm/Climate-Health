@@ -6,7 +6,7 @@ rm(list = ls()) # remove any variables in R's memory
 # setwd("C:/Users/alkin/Desktop/sigal sim/Climate-Health")
 source("Sim Functions/MicroSim_20230324.R")
 source("Sim Functions/Probs2.R")
-# source("Sim Functions/Costs.R")
+source("Sim Functions/Costs.R")
 source("Sim Functions/Effs.R")
 source("Sim Functions/multisheet2array.R")
 source("Sim Functions/logging.R")

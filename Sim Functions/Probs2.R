@@ -9,8 +9,7 @@ Probs <- function(M_it,                           # health state occupied by ind
                   risk_modifiers,                 # 3D object containing effect sizes for risk factors
                   v_asthma_state_names,           # vector of asthma health state names
                   x_i,                            # individual characteristics of individual i (row i of m_individual characteristics)
-                  fire_it,                        # smoke experience of individual i at cycle t (count)
-                  fire_it_lag1,                  # smoke experience of individual i at cycle t-1 (count)
+                  fire_it_2wk,                    # smoke experience of individual i at cycle t and t-1 (count)
                   intervention_coverage_it,       # intervention receipt of individual i at cycle t (binary)
                   death_rate_t,                   # death rate adjuster for cycle t
                   min_residual = 0,
@@ -30,8 +29,7 @@ Probs <- function(M_it,                           # health state occupied by ind
                                       x_i$age >= 18 & x_i$age < 55,
                                       x_i$age >= 55,
                                       x_i$sex,
-                                      fire_it,
-                                      fire_it_lag1,
+                                      fire_it_2wk,
                                       intervention_coverage_it), each=8), nrow = 8)
   
   # Extract the risk ratios for the appropriate transition probabilities

@@ -78,6 +78,7 @@ MicroSim <- function(n_i,
     m_intervention_receipt <- 
     m_asthma_therapies <-
     m_asthma_healthcare_use <-
+    m_costs <- 
     m_qalys <- 
     matrix(nrow=n_i, ncol=n_t+1, dimnames = list(paste("ind", 1:n_i), 
                                                  paste("cycle",0:n_t))) 
@@ -89,6 +90,7 @@ MicroSim <- function(n_i,
   time_since_dr_visit <- rep(0, n_i)                    # create vector to count cycles between doctor visits
   time_rf <-  rep(0, n_i)                               # create vector to track "risk" of improvement after severe exacerbation (poorly controlled or uncontrolled)
   
+  m_costs[ ,1] <- v_asthma_costs[match(m_asthma_states[ ,1], v_asthma_state_names)] 
   m_qalys[ ,1] <- Effs(m_asthma_states[ , 1], time_rf)
   
  
@@ -117,8 +119,9 @@ MicroSim <- function(n_i,
       # (based on intervention_coverage)
       
       fire_it <- as.integer(m_fire[m_fire$countyfip==pop_sample[i, "countyfip"], t+1])
-      fire_it_lag1 <- as.integer(m_fire[m_fire$countyfip==pop_sample[i, "countyfip"], t]) + fire_it
+      fire_it_2wk <- as.integer(m_fire[m_fire$countyfip==pop_sample[i, "countyfip"], t]) + fire_it
       
+      # THIS NEEDS TO BE FIXED
       if (intervention_coverage>0 & 
           (fire_it == 1)) {
         m_intervention_receipt[i,t+1] <- 
@@ -137,8 +140,7 @@ MicroSim <- function(n_i,
                        risk_modifiers = risk_modifiers,
                        v_asthma_state_names = v_asthma_state_names,
                        x_i = pop_sample[i, ], 
-                       fire_it = fire_it, 
-                       fire_it_lag1 = fire_it_lag1,
+                       fire_it_2wk = fire_it_2wk,
                        intervention_coverage_it = m_intervention_receipt[i,t],
                        death_rate_t = v_death_rate_adjusters[t],
                        min_residual = min_residual,
@@ -185,6 +187,11 @@ MicroSim <- function(n_i,
       m_qalys[i, t+1] <- Effs(M_it = m_asthma_states[i,t],
                               time_rf_it = time_rf[i]) 
     
+      
+      # Assign cost
+      m_costs[i, t+1] <- Costs(M_it = m_asthma_states[i,t],
+                               fire_it = fire_it)
+      
       # Increase age by cycle length
       pop_sample$age[i] <- 
         pop_sample$age[i] + cycle_length                              
@@ -247,11 +254,6 @@ MicroSim <- function(n_i,
   
   log_output(100, "Simulation complete. Preparing results.", log_file)
   
-  
-  m_costs <- sapply(as.data.frame(m_asthma_states), function(col) v_asthma_costs[col])
-  # add intervention cost
-  rownames(m_costs) <- paste("ind", 1:n_i)
- 
   
   tc <- m_costs %*% v_discount_weights_costs                                     # total discounted costs per individual
   te <- (m_qalys * cycle_length) %*% v_discount_weights_qalys                    # total discounted QALYs per individual
