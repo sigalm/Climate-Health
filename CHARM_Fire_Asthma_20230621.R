@@ -4,7 +4,8 @@
 rm(list = ls()) # remove any variables in R's memory
 
 # setwd("C:/Users/alkin/Desktop/sigal sim/Climate-Health")
-source("Sim Functions/MicroSim_20230324.R")
+source("Sim Functions/MicroSim_parallel.R")
+source("Sim Functions/MicroSim_serial.R")
 source("Sim Functions/Probs2.R")
 source("Sim Functions/Costs.R")
 source("Sim Functions/Effs.R")
@@ -23,6 +24,11 @@ library(knitr)
 library(gridExtra)
 library(matrixStats)
 
+# Testing parallel processing
+library(doParallel)
+library(foreach)
+
+
 
 ##################
 
@@ -31,7 +37,7 @@ library(matrixStats)
 #### Structural parameters ####
 
 n_i <- 5000                      # number of individuals
-n_t <- 20                        # time horizon (cycles)
+n_t <- 20                       # time horizon (cycles)
 cycle_length <- 1/52              # length of each cycle (in years)
 
 v_asthma_state_names <- c("0",        # No asthma 
@@ -150,7 +156,7 @@ asthma_fire_sample$id <- 1:n_i
 #### 3) Run Model ####
 
 # profvis({
-sim_no_fire <-MicroSim(n_i, n_t, 
+sim_no_fire <-MicroSim_parallel(n_i, n_t, 
                            smoke_data = smoke_data_0,
                            v_asthma_state_names, 
                            asthma_fire_sample, 
@@ -166,6 +172,7 @@ sim_no_fire <-MicroSim(n_i, n_t,
                            intervention_trigger = 0, 
                            discount_rate_costs,
                            discount_rate_qalys,
+                           cores=4,
                            min_residual = 0,
                            seed = 12345,
                            record_run = FALSE,
@@ -179,7 +186,7 @@ sim_no_fire_rerun <- reRunMicroSim("Runs/results_20230912_1723.RData")
 
 identical(sim_no_fire, sim_no_fire2)
 
-sim_fire_0.1_resid <- MicroSim(n_i, n_t, 
+sim_fire_0.1_resid_serial <- MicroSim_serial(n_i, n_t, 
                                smoke_data = smoke_data,
                                v_asthma_state_names, 
                                pop_sample = asthma_fire_sample, 
@@ -195,6 +202,7 @@ sim_fire_0.1_resid <- MicroSim(n_i, n_t,
                                intervention_trigger = 0, 
                                discount_rate_costs,
                                discount_rate_qalys,
+                               # cores=4,
                                min_residual = 0.1,
                                seed = 12345,
                                record_run = FALSE,
@@ -202,3 +210,4 @@ sim_fire_0.1_resid <- MicroSim(n_i, n_t,
 
 figure_0.1_resid <- make_figures(sim_fire_0.1_resid, "10% min residual", 1)
 
+identical(sim_fire_0.1_resid_serial$m_asthma_states, sim_fire_0.1_resid$m_asthma_states)

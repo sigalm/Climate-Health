@@ -1,4 +1,4 @@
-MicroSim <- function(n_i,
+MicroSim_parallel <- function(n_i,
                      n_t,
                      smoke_data,
                      v_asthma_state_names,
@@ -16,6 +16,7 @@ MicroSim <- function(n_i,
                      intervention_trigger, 
                      discount_rate_costs,
                      discount_rate_qalys,
+                     cores,
                      min_residual = 0,
                      seed = 1, 
                      record_run = TRUE,
@@ -82,7 +83,7 @@ MicroSim <- function(n_i,
     m_qalys <- 
     matrix(nrow=n_i, ncol=n_t+1, dimnames = list(paste("ind", 1:n_i), 
                                                  paste("cycle",0:n_t))) 
-  m_intervention_receipt[ ,1] <- 0      # initial intervention: none
+  m_intervention_receipt[ ,1] <- 0                      # initial intervention: none
   m_asthma_therapies[ ,1] <- pop_sample$asthma_therapy  # initial asthma management: pulled from individual data
   m_asthma_states[ ,1] <- pop_sample$asthma_status      # initial health states: pulled from data
   m_asthma_healthcare_use[ ,1] <- "none"
@@ -93,7 +94,7 @@ MicroSim <- function(n_i,
   m_costs[ ,1] <- v_asthma_costs[match(m_asthma_states[ ,1], v_asthma_state_names)] 
   m_qalys[ ,1] <- Effs(m_asthma_states[ , 1], time_rf)
   
- 
+  
   v_total_pop  <- rep(NA, n_t+1)                        # vector to track population size over each cycle
   v_total_pop[1] <- n_i
   v_total_pop_alive <- v_total_pop
@@ -102,15 +103,27 @@ MicroSim <- function(n_i,
              paste0("Starting simulation for n_i = ", n_i, 
                     " and n_t = ", n_t, "."), log_file)
   
+  cluster <- makeCluster(cores)
+  registerDoParallel(cluster)
+  
   # ================= SIMULATION LOOP START ================
   for (t in 1:n_t) {                                                             # start loop for time cycles
     
     total_births_t <- 0                                                          # initialize variable to keep track of number of births (define this in the loop because we want it to reset each cycle)
-    
+
     time_rf <- time_rf - (time_rf>0)                                             # reduce time risk factor by 1 if not zero
     
     log_output(3, sprintf("Simulating cycle t=%s/%s", t, n_t), log_file)
-    for (i in 1:n_i) {
+    
+    results_t <- foreach(i = 1:n_i, .combine = 'rbind', .packages = c('dplyr','matrixStats'),
+                         .export = c("Probs","Costs","Effs","log_output",
+                                     "v_healthcare_use",
+                                     "m_asthma_healthcare_use_probs_nofire",
+                                     "m_asthma_healthcare_use_probs_fireadj",
+                                     "v_asthma_hsu","v_hsu_decrements",
+                                     "max_dur_decrement",
+                                     "v_asthma_costs"),
+                         .verbose = FALSE) %dopar% {
       
       set.seed(seed+i*79+t*71)                                                   # set seed for every individual
       
@@ -124,10 +137,12 @@ MicroSim <- function(n_i,
       # THIS NEEDS TO BE FIXED
       if (intervention_coverage>0 & 
           (fire_it == 1)) {
-        m_intervention_receipt[i,t+1] <- 
+        # m_intervention_receipt[i,t+1] <- 
+        intervention_receipt_tplus1 <- 
           rbinom(n=1, size=1, prob=intervention_coverage)
       } else {
-        m_intervention_receipt[i,t+1] <- 0
+        # m_intervention_receipt[i,t+1] <- 
+        intervention_receipt_tplus1 <- 0
       }
       
       # calculate the transition probability for individual i at cycle t
@@ -147,54 +162,57 @@ MicroSim <- function(n_i,
                        record_run = record_run)
       log_output(1, sprintf("   Probs calculated i=%s in" , i), log_file)
       
-      m_asthma_states[i, t+1] <- 
+      # m_asthma_states[i, t+1] <- 
+      asthma_states_tplus1 <- 
         sample(v_asthma_state_names, prob=v_probs, size=1)                      
-     
+      
       
       # Sample if and what acute health resources will be used given new health state  
       if (fire_it == 0) {
-        m_asthma_healthcare_use[i, t+1] <-
+       # m_asthma_healthcare_use[i, t+1] <-
+        asthma_healthcare_use_tplus1 <- 
           sample(v_healthcare_use, size = 1,
-                 prob = m_asthma_healthcare_use_probs_nofire[m_asthma_states[i,t+1], ])
+                 prob = m_asthma_healthcare_use_probs_nofire[asthma_states_tplus1, ])
       } else {
-        m_asthma_healthcare_use[i, t+1] <-
+        # m_asthma_healthcare_use[i, t+1] <-
+        asthma_healthcare_use_tplus1 <- 
           sample(v_healthcare_use, size = 1,
-                 prob = m_asthma_healthcare_use_probs_fireadj[m_asthma_states[i,t+1], ])
+                 prob = m_asthma_healthcare_use_probs_fireadj[asthma_states_tplus1, ])
       }
       
       # Determine new therapy if therapy changed
-      worse_control <- as.integer(m_asthma_states[i,t+1]) > 
-        as.integer(m_asthma_states[i, t])                                        # assess if asthma control status got worse
-      time_since_dr_visit[i] <- time_since_dr_visit[i] + 1                       # increase time since last doctor visit by one cycle
+      worse_control <- as.integer(asthma_states_tplus1) > 
+        as.integer(asthma_states_tplus1)                                        # assess if asthma control status got worse
+      time_since_dr_visit_it <- time_since_dr_visit[i] + 1                       # increase time since last doctor visit by one cycle
       
-      if (worse_control | time_since_dr_visit[i]>=2) {                                 
-        m_asthma_therapies[i, t+1] <- 
+      if (worse_control | time_since_dr_visit_it>=2) {                                 
+        asthma_therapies_tplus1 <- 
           sample(v_asthma_therapies, size=1, 
-                 prob=m_asthma_therapy_probs[m_asthma_states[i,t+1], ])          # determine therapy for next cycle (given prob of each therapy based on new health state)
-        time_since_dr_visit[i] <- 0                                              # reset dr_visits counter
+                 prob=m_asthma_therapy_probs[asthma_states_tplus1, ])          # determine therapy for next cycle (given prob of each therapy based on new health state)
+        time_since_dr_visit_it <- 0                                              # reset dr_visits counter
       } else {                                                                   # otherwise keep using the same therapy
-        m_asthma_therapies[i, t+1] <- m_asthma_therapies[i,t]
+        asthma_therapies_tplus1 <- m_asthma_therapies[i,t]
       }
       
       
       # Start countdown from severe exacerbation
-      severe_exacerbation <- worse_control & (m_asthma_states[i, t+1] == 4 | m_asthma_states[i, t+1] == 5)
+      severe_exacerbation <- worse_control & (asthma_states_tplus1 == 4 | asthma_states_tplus1 == 5)
       if (severe_exacerbation) {
-        time_rf[i] <- 7                                                       # note: max effect is 6 weeks. starting from 7 because will subtract 1 at the beginning of next cycle
-      }  
+        time_rf_it <- 7                                                       # note: max effect is 6 weeks. starting from 7 because will subtract 1 at the beginning of next cycle
+      }  else {
+        time_rf_it <- time_rf[i]
+      }
       
       # Assign health state utility
-      m_qalys[i, t+1] <- Effs(M_it = m_asthma_states[i,t],
-                              time_rf_it = time_rf[i]) 
-    
+      qalys_tplus1 <- Effs(M_it = m_asthma_states[i,t],
+                              time_rf_it = time_rf_it) 
+      
       
       # Assign cost
-      m_costs[i, t+1] <- Costs(M_it = m_asthma_states[i,t],
+      costs_tplus1 <- Costs(M_it = m_asthma_states[i,t],
                                fire_it = fire_it)
       
-      # Increase age by cycle length
-      pop_sample$age[i] <- 
-        pop_sample$age[i] + cycle_length                              
+                         
       
       
       # # if individual is not Dead, determine # of kids born in year t
@@ -239,7 +257,30 @@ MicroSim <- function(n_i,
       #   total_births_t <- total_births_t + kids_it                               # calculate total number of births in cycle t
       # } # close if statement for kids
       
+      result <- data.frame(
+        intervention_receipt_tplus1 = as.numeric(intervention_receipt_tplus1), 
+        asthma_states_tplus1 = asthma_states_tplus1,
+        asthma_healthcare_use_tplus1 = asthma_healthcare_use_tplus1,
+        asthma_therapies_tplus1 = asthma_therapies_tplus1,
+        qalys_tplus1 = as.numeric(qalys_tplus1),
+        costs_tplus1 = as.numeric(costs_tplus1),
+        time_since_dr_visit_it = as.numeric(time_since_dr_visit_it),
+        time_rf_it = as.numeric(time_rf_it))
+      
     }  # close loop for individuals
+    
+    m_intervention_receipt[ ,t+1] <- results_t$intervention_receipt_tplus1
+    m_asthma_states[ ,t+1] <- results_t$asthma_states_tplus1
+    m_asthma_healthcare_use[ ,t+1] <- results_t$asthma_healthcare_use_tplus1
+    m_asthma_therapies[ ,t+1] <- results_t$asthma_therapies_tplus1
+    m_qalys[ ,t+1] <- results_t$qalys_tplus1
+    m_costs[ ,t+1] <- results_t$costs_tplus1
+    time_since_dr_visit <- results_t$time_since_dr_visit_it
+    time_rf <- as.numeric(results_t$time_rf_it)
+    
+    # Increase age by cycle length
+    pop_sample$age <- 
+      pop_sample$age + cycle_length          
     
     n_i <- n_i + total_births_t                                                  # increase n_i for next cycle by the total number of births
     v_total_pop[t+1] <- n_i                                                      # add the new population size to the population size tracking vector
@@ -250,7 +291,10 @@ MicroSim <- function(n_i,
     
   }    # close loop for cycles
   
+  stopCluster(cluster)
+  
   # ================= SIMULATION LOOP END ================
+  
   
   log_output(100, "Simulation complete. Preparing results.", log_file)
   
